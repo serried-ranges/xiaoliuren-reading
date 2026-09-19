@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="小六壬公开资料站的外部参考、个人推荐与收录边界。">
+  <title>友情链接 · 小六壬</title>
+  <link rel="stylesheet" href="../docs/site.css">
+</head>
+<body>
+  <main class="page-wrap">
+    <nav class="site-nav" aria-label="资料站导航">
+      <a href="/">排盘应用</a>
+      <a href="/manual/">阅读手册</a>
+      <a href="/privacy/">隐私边界</a>
+      <a href="/changelog/">更新记录</a>
+    </nav>
+    <article class="page-card">
+      <p class="eyebrow">XIAOLIUREN · REFERENCES</p>
+      <h1>友情链接</h1>
+      <p class="lead">这里列出经过作者复核的外部学习参考、历史传播参照和个人推荐。收录不等于背书，请自行判断。</p>
+      <p class="meta">最后复核：2026-09-20 · 外部页面会变化，本站不替第三方内容背书。</p>
+
+      <section class="section">
+        <h2>收录原则</h2>
+        <ul class="list">
+          <li>按外部学习参考、历史传播参照或作者个人推荐分别标注。</li>
+          <li>不以交换链接、排名、付费导流、返佣或商业合作作为收录条件。</li>
+          <li>联系方式仅在本人公开或获得授权后展示；个人推荐不构成卦断、收费、服务或结果保证。</li>
+          <li>页面、授权或内容边界变化后会重新复核；当事人可申请更正或撤下公开信息。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>已收录</h2>
+        <div class="grid">
+          <a class="resource" href="https://www.xiao6ren.com/" target="_blank" rel="noopener noreferrer">
+            <span class="tag">外部学习参考</span>
+            <h2>小六壬资料站 · xiao6ren.com</h2>
+            <span>以网站首页作为参考入口；本站不额外指定其站内页面，读者可自行浏览与判断。</span>
+          </a>
+          <a class="resource" href="http://x6ren.com/" target="_blank" rel="noopener noreferrer">
+            <span class="tag">历史传播参照</span>
+            <h2>小六壬资料站 · x6ren.com</h2>
+            <span>作为较早期小六壬网络传播形式的对比参照，用于了解资料整理和网络传播的时代背景。</span>
+            <span>本站不参与流派或人物纷争，也不为其内容、服务或结论背书。</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>作者个人推荐</h2>
+        <p>本页暂不展示个人微信号、二维码或其他个人联系方式。如需反馈，请通过项目说明页中的公开邮箱或 QQ 群联系。</p>
+      </section>
+
+      <section class="section">
+        <h2>未收录与复核</h2>
+        <p>未满足上述标准、页面长期无法访问，或收费与数据边界无法说明的条目，暂不收录；这不等于对第三方作负面结论。</p>
+        <p>外部页面、授权状态或内容边界发生变化后，本站会重新复核。当事人可通过项目已有反馈渠道申请更正或撤下公开信息。</p>
+      </section>
+
+      <p class="note"><strong>阅读提醒：</strong>外部链接会离开本站，第三方的隐私、收费、广告与内容规则以其自身页面为准。涉及医疗、法律、财务或重大人生决定时，请优先使用可靠的专业信息。</p>
+    </article>
+    <footer class="site-footer">
+      <div class="footer-links"><a href="/project/">项目说明</a><a href="/thanks/">鸣谢名单</a></div>
+      小六壬 V3.0.0 · 公开静态资料站
+    </footer>
+  </main>
+  <script>
+    document.querySelectorAll("[data-copy-value]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const value = button.dataset.copyValue;
+        const state = button.querySelector(".copy-state");
+        const show = (message) => {
+          state.textContent = message;
+          window.setTimeout(() => { state.textContent = "点击复制"; }, 1800);
+        };
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+          await navigator.clipboard.writeText(value);
+          button.dataset.copied = "true";
+          show("已复制");
+        } catch {
+          const input = document.createElement("input");
+          input.value = value;
+          input.readOnly = true;
+          input.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+          document.body.append(input);
+          input.select();
+          input.setSelectionRange(0, value.length);
+          const copied = document.execCommand("copy");
+          input.remove();
+          if (copied) {
+            button.dataset.copied = "true";
+            show("已复制");
+          } else {
+            show("请长按复制");
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

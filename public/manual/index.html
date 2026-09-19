@@ -1,0 +1,255 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="小六壬 V3.0.0 使用说明书：功能、主题、记录、隐私与智能解读。">
+  <title>小六壬 V3.0.0 · 使用说明书</title>
+  <style>
+    :root {
+      --paper: #f5f0e8;
+      --card: rgba(255, 254, 249, .9);
+      --ink: #2c2416;
+      --muted: #6b5e4a;
+      --gold: #8a6d1f;
+      --line: #c6b17f;
+      --accent: #b14d2f;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 8% 4%, rgba(212,165,116,.18), transparent 28rem),
+        radial-gradient(circle at 92% 10%, rgba(138,109,31,.08), transparent 25rem),
+        var(--paper);
+      font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+      line-height: 1.7;
+      line-break: strict;
+      overflow-x: hidden;
+      overflow-x: clip;
+    }
+    .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
+    header {
+      position: relative;
+      overflow: hidden;
+      padding: 48px 0 30px;
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, rgba(255,254,249,.54), rgba(255,254,249,.1));
+    }
+    header::after {
+      content: "";
+      position: absolute;
+      width: 260px;
+      height: 260px;
+      right: -110px;
+      top: -128px;
+      border: 1px solid rgba(138,109,31,.18);
+      border-radius: 50%;
+      box-shadow: 0 0 0 18px rgba(138,109,31,.04), 0 0 0 36px rgba(138,109,31,.025);
+      pointer-events: none;
+    }
+    header .shell { position: relative; z-index: 1; max-width: 980px; }
+    .eyebrow {
+      margin: 0 0 8px;
+      color: var(--gold);
+      letter-spacing: clamp(.08em, 1.2vw, .18em);
+      font-size: 13px;
+      line-height: 1.5;
+      overflow-wrap: anywhere;
+    }
+    h1, h2, h3 { font-family: "STSong", "SimSun", serif; font-weight: 600; }
+    h1 {
+      max-width: 100%;
+      margin: 0;
+      font-size: clamp(32px, 5vw, 58px);
+      line-height: 1.18;
+      letter-spacing: clamp(.04em, 1.1vw, .12em);
+      overflow-wrap: anywhere;
+      text-wrap: balance;
+    }
+    .lead {
+      max-width: 70ch;
+      margin: 16px 0 0;
+      color: var(--muted);
+      font-size: clamp(15px, 1.45vw, 18px);
+      line-height: 1.8;
+      overflow-wrap: anywhere;
+      text-wrap: pretty;
+    }
+    nav {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      max-width: 780px;
+      margin-top: 22px;
+    }
+    nav a, .download {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 34px;
+      max-width: 100%;
+      padding: 7px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px; color: var(--gold); background: rgba(255,254,249,.66);
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.45;
+      text-align: center;
+      overflow-wrap: anywhere;
+    }
+    nav a:hover, .download:hover { color: var(--accent); border-color: var(--accent); }
+    .notice {
+      max-width: 980px;
+      margin: 26px auto 32px;
+      padding: 16px 20px;
+      border: 1px solid rgba(198,177,127,.36);
+      border-left: 4px solid var(--gold);
+      border-radius: 0 14px 14px 0;
+      background: rgba(255,254,249,.72);
+      color: var(--muted);
+      font-size: clamp(13px, 1.3vw, 15px);
+      line-height: 1.7;
+      overflow-wrap: anywhere;
+    }
+    .notice strong { color: var(--ink); }
+    .highlights {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+      margin: 0 0 44px;
+    }
+    .highlight {
+      min-width: 0;
+      min-height: 88px;
+      padding: 15px 17px;
+      border: 1px solid rgba(198,177,127,.68);
+      border-radius: 14px;
+      background: rgba(255,254,249,.65);
+    }
+    .highlight b {
+      display: block;
+      color: var(--gold);
+      font-family: "STSong", "SimSun", serif;
+      font-size: clamp(16px, 1.7vw, 19px);
+      line-height: 1.35;
+      overflow-wrap: anywhere;
+    }
+    .highlight span {
+      display: block;
+      margin-top: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      overflow-wrap: anywhere;
+    }
+    main { padding: 34px 0 56px; }
+    .section-title { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin: 42px 0 18px; }
+    .section-title h2 { min-width: 0; margin: 0; font-size: 30px; letter-spacing: .08em; overflow-wrap: anywhere; }
+    .section-title p { min-width: 0; margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
+    .book-page, .reference {
+      margin: 0 0 28px; padding: 14px; border: 1px solid rgba(198,177,127,.75);
+      border-radius: 18px; background: var(--card); box-shadow: 0 14px 34px rgba(98,76,33,.10);
+    }
+    .book-page img, .reference img { display: block; width: 100%; height: auto; border-radius: 10px; }
+    .image-frame { position: relative; }
+    .reference-badge {
+      position: absolute; top: 14px; right: 14px; z-index: 1; padding: 4px 9px;
+      border: 1px solid rgba(138,109,31,.65); border-radius: 999px;
+      color: var(--gold); background: rgba(255,254,249,.9); font-size: 12px;
+      letter-spacing: .08em; box-shadow: 0 4px 12px rgba(98,76,33,.12);
+    }
+    figcaption { padding: 12px 6px 2px; color: var(--muted); font-size: 14px; }
+    figcaption strong { color: var(--ink); }
+    .reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
+    .reference { margin: 0; }
+    .reference .download { margin-top: 8px; }
+    footer { padding: 24px 0 54px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    footer a { color: var(--gold); }
+    @media (max-width: 900px) {
+      .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 700px) {
+      .shell { width: min(100% - 22px, 1180px); }
+      header { padding-top: 30px; }
+      header .shell { max-width: none; }
+      .highlights { margin-bottom: 34px; }
+      .reference-grid { grid-template-columns: 1fr; }
+      .section-title { display: block; }
+      .section-title p { margin-top: 3px; }
+      .book-page, .reference { padding: 8px; border-radius: 12px; }
+    }
+    @media (max-width: 520px) {
+      .shell { width: min(100% - 24px, 1180px); }
+      header { padding: 28px 0 24px; }
+      .eyebrow { font-size: 11px; }
+      h1 { font-size: clamp(30px, 10vw, 42px); letter-spacing: .04em; }
+      .lead { margin-top: 13px; font-size: 15px; line-height: 1.75; }
+      nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
+      nav a, .download { padding: 7px 10px; font-size: 13px; }
+      .notice { margin: 20px 0 26px; padding: 13px 14px; border-radius: 0 12px 12px 0; }
+      .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+      .highlight { min-height: 0; padding: 13px 14px; }
+      .highlight b { font-size: 18px; }
+      .highlight span { font-size: 12.5px; }
+    }
+    @media print {
+      body { background: #fff; }
+      header, .notice, .highlights, footer, .section-title p, nav { display: none; }
+      .shell { width: 100%; }
+      main { padding: 0; }
+      .section-title { margin: 0 0 8px; }
+      .book-page, .reference { break-inside: avoid; box-shadow: none; border: 0; padding: 0; margin-bottom: 16px; }
+      .book-page { break-after: page; }
+      .reference-grid { display: block; }
+      .reference { break-after: page; }
+      figcaption { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell">
+      <p class="eyebrow">小六壬 · V3.0.0 · 使用说明书</p>
+      <h1>从起念到复盘</h1>
+      <p class="lead">一册读懂起卦、排盘、主题切换、记录与 AI 解读。按“提出问题 → 完成起卦 → 查看结果 → 再决定是否使用 AI”的顺序阅读，把复杂留给工具，把判断留给自己。</p>
+      <nav aria-label="资料站导航"><a href="/">排盘应用</a><a href="#manual">阅读手册</a><a href="../privacy/">隐私边界</a><a href="../changelog/">更新记录</a></nav>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="notice"><strong>阅读提示：</strong>图版用于帮助理解操作，实际按钮和页面请以当前排盘应用为准。本站页面可能被下载或转发，请不要把 API Key、身份证明或其他敏感资料放入截图、导出文件或反馈；隐私细节见 <a href="../privacy/">隐私边界</a>。</div>
+
+    <section class="highlights" aria-label="当前亮点速览">
+      <div class="highlight"><b>三种取数</b><span>手动输入、时间起卦、随机起卦</span></div>
+      <div class="highlight"><b>三种排盘</b><span>古法默认，江氏与道传可切换</span></div>
+      <div class="highlight"><b>AI 解读</b><span>先复制提示词，也可主动一键调用</span></div>
+      <div class="highlight"><b>本地记录</b><span>保存、搜索与 JSON 备份</span></div>
+      <div class="highlight"><b>主题切换</b><span>暖金默认，也可按喜好选择主题</span></div>
+      <div class="highlight"><b>低权限使用</b><span>无需注册，不申请设备权限</span></div>    </section>
+
+    <section id="manual">
+      <div class="section-title"><h2>使用说明</h2><p>按顺序阅读，或直接跳到需要的章节</p></div>
+      <figure class="book-page"><a href="images/00-封面.webp"><img src="images/00-封面.webp" alt="小六壬 V3.0.0 使用说明书封面" width="1200" height="1600" loading="eager" decoding="async"></a><figcaption><strong>00 · 封面</strong>　项目定位、阅读顺序与三条入门提醒。</figcaption></figure>
+      <figure class="book-page"><a href="images/01-建议的第一次使用.webp"><img src="images/01-建议的第一次使用.webp" alt="建议的第一次使用" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>01 · 建议的第一次使用</strong>　从问题表达开始，按输入、推算、查看结果的顺序完成第一次操作。</figcaption></figure>
+      <figure class="book-page"><a href="images/02-小六壬历史与来源.webp"><img src="images/02-小六壬历史与来源.webp" alt="小六壬历史与来源" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>02 · 小六壬历史与来源</strong>　区分可核对资料、传统说法与算法边界。</figcaption></figure>
+      <figure class="book-page"><a href="images/03-起卦前的注意事项.webp"><img src="images/03-起卦前的注意事项.webp" alt="起卦前的注意事项" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>03 · 起卦前的注意事项</strong>　一课一问、慎用随机数，并把结果作为思考参考。</figcaption></figure>
+      <figure class="book-page"><a href="images/04-三种取数方式.webp"><img src="images/04-三种取数方式.webp" alt="三种取数方式" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>04 · 三种取数方式</strong>　手动输入、时间起卦与随机起卦的使用差异。</figcaption></figure>
+      <figure class="book-page"><a href="images/05-排盘结果与操作.webp"><img src="images/05-排盘结果与操作.webp" alt="排盘结果与操作" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>05 · 排盘结果与操作</strong>　古法默认；江氏、道传为互斥开关，AI 提示词独立进入，一键解卦按需调用。</figcaption></figure>
+      <figure class="book-page"><a href="images/06-记录复盘与备份.webp"><img src="images/06-记录复盘与备份.webp" alt="记录复盘与备份" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>06 · 记录复盘与备份</strong>　历史记录、反馈、JSON 导入导出与本地备份边界。</figcaption></figure>
+      <figure class="book-page"><a href="images/07-主题时间与更多.webp"><img src="images/07-主题时间与更多.webp" alt="主题时间与更多" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>07 · 主题、时间与更多</strong>　暖金、墨青、星夜等皮肤，以及标题时间和更多菜单。</figcaption></figure>
+      <figure class="book-page"><a href="images/08-AI解读.webp"><img src="images/08-AI解读.webp" alt="AI 解读" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>08 · AI 解读</strong>　一键解卦、流式结果、四个固定提示词入口与调用边界。</figcaption></figure>
+      <figure class="book-page"><a href="images/09-本地数据与隐私.webp"><img src="images/09-本地数据与隐私.webp" alt="本地数据与隐私" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>09 · 本地数据与隐私</strong>　身份标识、记录与 Key 的本地保存方式，以及主动调用 AI 时的数据边界。</figcaption></figure>
+      <figure class="book-page"><a href="images/10-设计理念与多平台.webp"><img src="images/10-设计理念与多平台.webp" alt="设计理念与多平台" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>10 · 设计理念与多平台</strong>　低干扰的暖金美学、留白与响应式阅读体验。</figcaption></figure>
+      <figure class="book-page"><a href="images/11-无广告与数据流向.webp"><img src="images/11-无广告与数据流向.webp" alt="无广告与数据流向" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>11 · 无广告与数据流向</strong>　页面中的广告与数据流向说明，以及使用时需要留意的例外。</figcaption></figure>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="shell">民俗文化体验，理性参考。普通排盘与记录以浏览器本地保存为主；主动使用 AI 时，必要数据会发送至用户配置的模型接口。返回 <a href="../">排盘应用</a>、<a href="../project/">项目说明</a> 或 <a href="../privacy/">隐私边界</a>。</div>
+  </footer>
+</body>
+</html>

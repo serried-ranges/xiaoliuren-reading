@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="小六壬公开资料站的项目说明、使用入口与公开边界。">
+  <title>项目说明 · 小六壬</title>
+  <link rel="stylesheet" href="../docs/site.css">
+</head>
+<body>
+  <main class="page-wrap">
+    <nav class="site-nav" aria-label="资料站导航">
+      <a href="/">排盘应用</a>
+      <a href="/manual/">阅读手册</a>
+      <a href="/privacy/">隐私边界</a>
+      <a href="/changelog/">更新记录</a>
+    </nav>
+    <article class="page-card">
+      <p class="eyebrow">XIAOLIUREN · PROJECT</p>
+      <h1>项目说明</h1>
+      <p class="lead">小六壬是一套本地优先的静态排盘应用；这里说明如何开始、数据如何处理，以及公开资料如何阅读。</p>
+
+      <section class="grid" aria-label="核心入口">
+        <a class="link-card" href="/manual/">
+          <h2>📖 阅读手册</h2>
+          <span>从第一次起卦到查看结果，按步骤了解常用功能。</span>
+        </a>
+        <a class="link-card" href="/privacy/">
+          <h2>🔒 隐私边界</h2>
+          <span>了解记录、主题和 AI 请求的数据去向。</span>
+        </a>
+        <a class="link-card" href="/changelog/">
+          <h2>🗓 更新记录</h2>
+          <span>查看已经上线的功能与资料调整。</span>
+        </a>
+      </section>
+
+      <section class="section">
+        <h2>更多资料</h2>
+        <div class="secondary-grid">
+          <a class="link-card" href="/friends/">
+            <h2>🔗 友情链接</h2>
+            <span>外部学习参考、历史参照与作者推荐。</span>
+          </a>
+          <a class="link-card" href="/thanks/">
+            <h2>🙏 鸣谢名单</h2>
+            <span>查看首批试用者名单与公开鸣谢规则。</span>
+          </a>
+          <a class="link-card" href="https://github.com/serried-ranges/xiaoliuren-reading" target="_blank" rel="noopener noreferrer">
+            <h2>⌘ GitHub 资料站</h2>
+            <span>资料站内容仓库：页面文案、使用手册与公开资料的版本记录（CC BY-NC 4.0）。</span>
+          </a>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>怎么开始</h2>
+        <p>第一次使用，建议先阅读手册，再回到排盘应用完成一次起卦。普通排盘和记录可以直接在当前浏览器中使用。</p>
+      </section>
+
+      <section class="section">
+        <h2>设计取向</h2>
+        <ul class="list">
+          <li><strong>本地优先：</strong>普通排盘、主题偏好和历史记录先在当前浏览器完成。</li>
+          <li><strong>主动选择：</strong>AI 提示词可以先检查和复制；一键解卦只有在你主动配置并发起请求时才会使用外部接口。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>联系作者</h2>
+        <div class="grid">
+          <a class="link-card contact-card" href="mailto:serried_ranges@outlook.com">
+            <h2>📧 邮箱</h2>
+            <span>serried_ranges@outlook.com</span>
+            <span>问题反馈、授权咨询与合作联系。</span>
+          </a>
+          <div class="link-card contact-card">
+            <h2>🐧 QQ 群</h2>
+            <button class="copy-id" type="button" data-copy-value="1125973506" aria-label="复制QQ群号 1125973506">
+              <span>1125973506</span>
+              <span class="copy-state" aria-live="polite">点击复制</span>
+            </button>
+            <span>交流与反馈，联系时请备注「小六壬」。</span>
+          </div>
+        </div>
+        <p class="meta">公开页面不展示个人微信号；如需微信沟通，可先通过邮箱或 QQ 群联系。</p>
+      </section>
+
+      <p class="note"><strong>阅读边界：</strong>本站提供民俗文化体验、学习与记录参考，不替代医疗、法律、财务等专业意见，也不对现实结果作保证。</p>
+    </article>
+    <footer class="site-footer">
+      <div class="footer-links"><a href="/friends/">友情链接</a><a href="/thanks/">鸣谢名单</a></div>
+      小六壬 V3.0.0 · 公开静态资料站
+    </footer>
+  </main>
+  <script>
+    document.querySelectorAll("[data-copy-value]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const value = button.dataset.copyValue;
+        const state = button.querySelector(".copy-state");
+        const show = (message) => {
+          state.textContent = message;
+          window.setTimeout(() => { state.textContent = "点击复制"; }, 1800);
+        };
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+          await navigator.clipboard.writeText(value);
+          button.dataset.copied = "true";
+          show("已复制");
+        } catch {
+          const input = document.createElement("input");
+          input.value = value;
+          input.readOnly = true;
+          input.style.cssText = "position:fixed;opacity:0;pointer-events:none";
+          document.body.append(input);
+          input.select();
+          input.setSelectionRange(0, value.length);
+          const copied = document.execCommand("copy");
+          input.remove();
+          if (copied) {
+            button.dataset.copied = "true";
+            show("已复制");
+          } else {
+            show("请长按复制");
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>

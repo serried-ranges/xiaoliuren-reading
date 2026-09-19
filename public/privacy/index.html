@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="小六壬 V3 的浏览器保存、AI 请求与公开页面边界说明。">
+  <title>隐私边界 · 小六壬</title>
+  <link rel="stylesheet" href="../docs/site.css">
+</head>
+<body>
+  <main class="page-wrap">
+    <nav class="site-nav" aria-label="资料站导航">
+      <a href="/">排盘应用</a>
+      <a href="/manual/">阅读手册</a>
+      <a href="/privacy/">隐私边界</a>
+      <a href="/changelog/">更新记录</a>
+    </nav>
+    <article class="page-card">
+      <p class="eyebrow">XIAOLIUREN · PRIVACY</p>
+      <h1>隐私边界</h1>
+      <p class="lead">用最短的话说明数据留在哪里、什么时候离开浏览器。</p>
+      <p class="meta">适用版本：V3.0.0 · 资料站校对：2026-09-20</p>
+      <p class="note"><strong>先说结论：</strong>普通排盘和历史记录优先在当前浏览器完成；只有你主动使用一键解卦时，必要数据才会发送到你填写的模型接口。</p>
+
+      <section class="section">
+        <h2>留在浏览器</h2>
+        <ul class="list">
+          <li>页面不要求注册，也不申请麦克风、通讯录、定位等设备权限。</li>
+          <li>主题、界面偏好、身份标识和历史记录保存在当前浏览器，不会自动跨设备同步。</li>
+          <li>清理站点数据、共享设备或浏览器故障可能造成记录丢失；重要记录请导出 JSON 备份。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>主动使用 AI</h2>
+        <ul class="list">
+          <li>“AI 提示词”只在本机生成、检查和复制，不会自动调用模型。</li>
+          <li>“一键解卦”由你主动发起；问念、排盘摘要和认证信息会交给你配置的服务商处理。</li>
+          <li>API Key 只应在浏览器中填写，不要放入仓库、截图、导出文件或公开反馈。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>公开页面</h2>
+        <p>资料页可能被缓存、下载或镜像。请不要在公开页面、截图和反馈中提交 API Key、身份证明或其他敏感资料。</p>
+        <p>普通排盘属于民俗文化体验与学习参考，不替代医疗、法律、财务等专业意见。</p>
+      </section>
+    </article>
+    <footer class="site-footer">
+      <div class="footer-links"><a href="/project/">项目说明</a><a href="/manual/">阅读手册</a></div>
+      小六壬 V3.0.0 · 公开静态资料站
+    </footer>
+  </main>
+</body>
+</html>

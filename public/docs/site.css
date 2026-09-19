@@ -1,0 +1,325 @@
+:root {
+  color-scheme: light;
+  --paper: #f6f0e5;
+  --card: #fffaf2;
+  --ink: #332b25;
+  --muted: #6d6054;
+  --line: #d8c8b1;
+  --accent: #9b4935;
+  --accent-soft: #f2e8da;
+  --gold: #8b6c20;
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0;
+  min-width: 0;
+  background:
+    radial-gradient(circle at 8% 2%, #e6d2b52c, transparent 24rem),
+    var(--paper);
+  color: var(--ink);
+  font: 16px/1.75 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  overflow-x: hidden;
+}
+a { color: var(--accent); }
+img { max-width: 100%; }
+
+.page-wrap {
+  width: min(calc(100% - 28px), 920px);
+  margin: 0 auto;
+  padding: clamp(18px, 5vw, 58px) 0 28px;
+}
+
+.site-nav {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0 0 22px;
+}
+.site-nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(255, 250, 242, .78);
+  color: var(--accent);
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.35;
+  text-align: center;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.site-nav a:hover,
+.site-nav a:focus-visible {
+  border-color: var(--accent);
+  outline: 2px solid #9b493533;
+  outline-offset: 2px;
+}
+
+.page-card {
+  padding: clamp(22px, 5vw, 46px);
+  background: color-mix(in srgb, var(--card) 94%, white);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 14px 44px #5b43201a;
+}
+.eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  overflow-wrap: anywhere;
+}
+h1, h2, h3 { text-wrap: balance; }
+h1 {
+  margin: 10px 0 14px;
+  font-family: "STSong", "SimSun", serif;
+  font-size: clamp(34px, 6vw, 58px);
+  line-height: 1.2;
+  letter-spacing: .03em;
+  overflow-wrap: anywhere;
+}
+.lead {
+  max-width: 48rem;
+  margin: 0;
+  color: var(--muted);
+  font-size: clamp(16px, 2vw, 19px);
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.meta {
+  margin: 14px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 28px 0 0;
+}
+.secondary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+}
+.link-card,
+.resource {
+  display: block;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid #dfcfba;
+  border-radius: 15px;
+  background: #fffdf8;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+.link-card:hover,
+.link-card:focus-visible,
+.resource:hover,
+.resource:focus-visible {
+  transform: translateY(-2px);
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px #5b43201a;
+  outline: none;
+}
+.link-card h2,
+.resource h2 {
+  margin: 0 0 6px;
+  color: #753b2f;
+  font-size: 1.08rem;
+  line-height: 1.45;
+}
+.link-card span,
+.resource span {
+  display: block;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.section {
+  margin-top: 30px;
+  padding-top: 24px;
+  border-top: 1px solid #e1d4c3;
+}
+.section h2 {
+  margin: 0 0 9px;
+  color: #753b2f;
+  font-size: 1.25rem;
+  line-height: 1.45;
+}
+.section p { margin: 8px 0; }
+.list {
+  margin: 8px 0 0;
+  padding-left: 1.25em;
+}
+.list li { margin: .42em 0; }
+.note {
+  margin: 22px 0 0;
+  padding: 14px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent-soft);
+  color: #5d4f43;
+  overflow-wrap: anywhere;
+}
+.tag {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 3px 9px;
+  border: 1px solid #d6c196;
+  border-radius: 999px;
+  color: #795d18;
+  background: #fff9eb;
+  font-size: 12px;
+  font-weight: 700;
+}
+.copy-id {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
+  max-width: 100%;
+  margin: 4px 0 8px;
+  padding: 7px 11px;
+  border: 1px dashed #b79255;
+  border-radius: 10px;
+  background: #fffaf0;
+  color: #6b4a16;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.copy-id:hover,
+.copy-id:focus-visible {
+  border-style: solid;
+  border-color: var(--accent);
+  outline: 2px solid #9b493533;
+  outline-offset: 2px;
+}
+.copy-id[data-copied="true"] {
+  border-color: #6f9578;
+  background: #f2f8f0;
+  color: #3e694d;
+}
+.site-footer {
+  margin-top: 20px;
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin-bottom: 8px;
+}
+.footer-links a { font-weight: 700; }
+
+/* ---- 鸣谢名单卡片 ---- */
+.group-label {
+  margin: 26px 0 0;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+}
+.thanks-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 12px 0 0;
+}
+.thanks-card {
+  position: relative;
+  padding: 18px 14px 14px;
+  border: 1px solid #dfcfba;
+  border-radius: 14px;
+  background: #fffdf8;
+  text-align: center;
+  overflow: hidden;
+  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.thanks-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  opacity: 0;
+  transition: opacity .18s ease;
+}
+.thanks-card::after {
+  content: "谢";
+  position: absolute;
+  right: 6px;
+  bottom: -6px;
+  font-family: "STSong", "SimSun", serif;
+  font-size: 46px;
+  color: rgb(155 73 53 / 6%);
+  pointer-events: none;
+}
+.thanks-card:hover,
+.thanks-card:focus-visible {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+  box-shadow: 0 10px 22px #5b43201a;
+}
+.thanks-card:hover::before,
+.thanks-card:focus-visible::before { opacity: 1; }
+.thanks-card__name {
+  position: relative;
+  font-family: "STSong", "SimSun", serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: #753b2f;
+  letter-spacing: .05em;
+}
+.thanks-card__role {
+  position: relative;
+  margin-top: 4px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ---- 联系作者卡片 ---- */
+.contact-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.contact-card .copy-id { align-self: flex-start; margin: 0; }
+
+@media (max-width: 720px) {
+  .grid,
+  .secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .thanks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 520px) {
+  .page-wrap { width: min(calc(100% - 28px), 920px); }
+  .site-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .page-card { border-radius: 18px; }
+  .grid,
+  .secondary-grid,
+  .thanks-grid { grid-template-columns: 1fr; }
+  h1 { font-size: clamp(34px, 10vw, 44px); }
+  .lead { font-size: 16px; line-height: 1.75; }
+  .link-card,
+  .resource { padding: 16px; }
+}
+@media (max-width: 340px) {
+  .page-wrap { width: min(calc(100% - 22px), 920px); }
+  .site-nav a { padding-inline: 7px; font-size: 13px; }
+}

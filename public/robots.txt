@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+# 这是公开资料站；robots.txt 只表达抓取偏好，不是访问控制。
