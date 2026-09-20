@@ -8,14 +8,14 @@
   --accent: #9b4935;
   --accent-soft: #f2e8da;
   --gold: #8b6c20;
-  /* ---- 统一字体令牌：中文字体优先，减少中英文混排的字面跳变 ----
-     衬线字体保留资料站的书卷感；无衬线字体用于导航、标签和辅助信息。
-     不依赖远程字体，未安装时按系统字体自然回退。 */
-  --font-serif: "Noto Serif SC", "Source Han Serif SC", "LXGW WenKai",
-                "Songti SC", "STSong", "SimSun", "Times New Roman",
-                "Source Serif Pro", Georgia, serif;
-  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
-               "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* ---- 统一字体令牌（中文宋体 + 西文新罗马，兼顾各设备） ----
+     西文字体写在最前：Times New Roman 不含汉字，拉丁/数字由它渲染，
+     汉字自动落到后面的宋体栈，从而在一行内实现“中文宋体 + 西文新罗马”。
+     回退顺序覆盖 Windows(思源宋体/华文宋体/宋体)、iOS(Songti SC)、Android(serif)。 */
+  --font-serif: "Times New Roman", "Noto Serif SC", "Source Han Serif SC",
+                "Songti SC", "STSong", "SimSun", serif;
+  --font-sans: "Segoe UI", system-ui, "Microsoft YaHei", "Noto Sans SC",
+               "PingFang SC", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -31,16 +31,6 @@ body {
   font-size: 16.5px;
   line-height: 1.85;
   overflow-x: hidden;
-}
-.site-nav,
-.eyebrow,
-.meta,
-.tag,
-.copy-id,
-.link-card span,
-.resource span,
-.site-footer {
-  font-family: var(--font-sans);
 }
 a { color: var(--accent); }
 img { max-width: 100%; }
@@ -234,7 +224,6 @@ h1 {
   background: #f2f8f0;
   color: #3e694d;
 }
-.copy-id { font-family: var(--font-sans); }
 .site-footer {
   margin-top: 20px;
   color: var(--muted);
