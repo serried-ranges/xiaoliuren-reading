@@ -8,6 +8,14 @@
   --accent: #9b4935;
   --accent-soft: #f2e8da;
   --gold: #8b6c20;
+  /* ---- 统一字体令牌：中文字体优先，减少中英文混排的字面跳变 ----
+     衬线字体保留资料站的书卷感；无衬线字体用于导航、标签和辅助信息。
+     不依赖远程字体，未安装时按系统字体自然回退。 */
+  --font-serif: "Noto Serif SC", "Source Han Serif SC", "LXGW WenKai",
+                "Songti SC", "STSong", "SimSun", "Times New Roman",
+                "Source Serif Pro", Georgia, serif;
+  --font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei",
+               "Hiragino Sans GB", system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 * { box-sizing: border-box; }
@@ -19,8 +27,20 @@ body {
     radial-gradient(circle at 8% 2%, #e6d2b52c, transparent 24rem),
     var(--paper);
   color: var(--ink);
-  font: 16px/1.75 system-ui, -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+  font-family: var(--font-serif);
+  font-size: 16.5px;
+  line-height: 1.85;
   overflow-x: hidden;
+}
+.site-nav,
+.eyebrow,
+.meta,
+.tag,
+.copy-id,
+.link-card span,
+.resource span,
+.site-footer {
+  font-family: var(--font-sans);
 }
 a { color: var(--accent); }
 img { max-width: 100%; }
@@ -63,7 +83,7 @@ img { max-width: 100%; }
 
 .page-card {
   padding: clamp(22px, 5vw, 46px);
-  background: color-mix(in srgb, var(--card) 94%, white);
+  background: #fffdf9;
   border: 1px solid var(--line);
   border-radius: 22px;
   box-shadow: 0 14px 44px #5b43201a;
@@ -79,7 +99,7 @@ img { max-width: 100%; }
 h1, h2, h3 { text-wrap: balance; }
 h1 {
   margin: 10px 0 14px;
-  font-family: "STSong", "SimSun", serif;
+  font-family: var(--font-serif);
   font-size: clamp(34px, 6vw, 58px);
   line-height: 1.2;
   letter-spacing: .03em;
@@ -214,6 +234,7 @@ h1 {
   background: #f2f8f0;
   color: #3e694d;
 }
+.copy-id { font-family: var(--font-sans); }
 .site-footer {
   margin-top: 20px;
   color: var(--muted);
@@ -228,47 +249,44 @@ h1 {
 }
 .footer-links a { font-weight: 700; }
 
-/* ---- 鸣谢名单卡片 ---- */
-.group-label {
-  margin: 26px 0 0;
-  color: var(--accent);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: .08em;
-}
+/* ---- 鸣谢名单：统一名册墙，不分类、不加注 ---- */
 .thanks-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
-  margin: 12px 0 0;
+  gap: clamp(8px, 1.5vw, 14px);
+  margin: clamp(22px, 3.4vw, 34px) 0 0;
 }
 .thanks-card {
   position: relative;
-  padding: 18px 14px 14px;
-  border: 1px solid #dfcfba;
-  border-radius: 14px;
-  background: #fffdf8;
+  display: grid;
+  place-items: center;
+  min-height: clamp(72px, 19vw, 102px);
+  padding: 16px 10px;
+  border: 1px solid #e2d3bd;
+  border-radius: clamp(12px, 2.4vw, 18px);
+  background: linear-gradient(180deg, #fffdf8 0%, #fdf8ee 100%);
   text-align: center;
   overflow: hidden;
-  transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
 }
 .thanks-card::before {
   content: "";
   position: absolute;
   inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, transparent, var(--accent), transparent);
-  opacity: 0;
-  transition: opacity .18s ease;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #b9903f, transparent);
+  opacity: .5;
+  transition: opacity .2s ease;
 }
 .thanks-card::after {
   content: "谢";
   position: absolute;
-  right: 6px;
-  bottom: -6px;
-  font-family: "STSong", "SimSun", serif;
-  font-size: 46px;
-  color: rgb(155 73 53 / 6%);
+  right: 4px;
+  bottom: -0.06em;
+  font-family: var(--font-serif);
+  font-size: clamp(38px, 10vw, 54px);
+  line-height: 1;
+  color: rgb(155 73 53 / 7%);
   pointer-events: none;
 }
 .thanks-card:hover,
@@ -276,22 +294,19 @@ h1 {
   transform: translateY(-3px);
   border-color: var(--accent);
   box-shadow: 0 10px 22px #5b43201a;
+  outline: none;
 }
 .thanks-card:hover::before,
 .thanks-card:focus-visible::before { opacity: 1; }
 .thanks-card__name {
   position: relative;
-  font-family: "STSong", "SimSun", serif;
-  font-size: 18px;
-  font-weight: 700;
-  color: #753b2f;
-  letter-spacing: .05em;
-}
-.thanks-card__role {
-  position: relative;
-  margin-top: 4px;
-  font-size: 12px;
-  color: var(--muted);
+  z-index: 1;
+  font-family: var(--font-serif);
+  font-size: clamp(15px, 4.2vw, 19px);
+  font-weight: 600;
+  color: #6d3126;
+  letter-spacing: .06em;
+  overflow-wrap: anywhere;
 }
 
 /* ---- 联系作者卡片 ---- */
@@ -305,19 +320,22 @@ h1 {
 @media (max-width: 720px) {
   .grid,
   .secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .thanks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 520px) {
   .page-wrap { width: min(calc(100% - 28px), 920px); }
   .site-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
-  .page-card { border-radius: 18px; }
+  .page-card { border-radius: 18px; padding: 20px 16px; }
   .grid,
-  .secondary-grid,
-  .thanks-grid { grid-template-columns: 1fr; }
-  h1 { font-size: clamp(34px, 10vw, 44px); }
-  .lead { font-size: 16px; line-height: 1.75; }
+  .secondary-grid { grid-template-columns: 1fr; }
+  h1 { font-size: clamp(32px, 9.6vw, 44px); }
+  .lead { font-size: 16px; line-height: 1.8; }
   .link-card,
   .resource { padding: 16px; }
+  .section { margin-top: 24px; padding-top: 20px; }
+}
+/* 极窄屏：名册改为两列，保证每个名字仍有足够留白 */
+@media (max-width: 360px) {
+  .thanks-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 340px) {
   .page-wrap { width: min(calc(100% - 22px), 920px); }
