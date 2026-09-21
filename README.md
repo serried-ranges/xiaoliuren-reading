@@ -22,15 +22,16 @@
    Pages 项目 → Settings → Environment variables → 添加（Production 与 Preview 都加）：
    - `DEEPSEEK_API_KEY`：你的 DeepSeek Key（类型选 Secret / 加密）
    - `IP_SALT`（建议）：任意随机字符串，用于对 IP 做 HMAC 哈希
+   - `FREE_QUOTA_ENABLED`（可选）：**默认关闭**；设为 `true`（或 `1`）才启用免费额度
 
 4. **重新部署**：推送一次（或触发一次部署）让绑定生效。
 
-可选变量：`FREE_USER_LIMIT`(默认 10)、`FREE_IP_LIMIT`(默认 20)、`FREE_GLOBAL_LIMIT`(默认 300)、`ALLOWED_ORIGINS`、`ALLOWED_MODELS`、`DEEPSEEK_BASE_URL`。
+可选变量：`FREE_USER_LIMIT`(默认 10)、`FREE_IP_LIMIT`(默认 10)、`FREE_GLOBAL_LIMIT`(默认 300)、`FREE_QUOTA_ENABLED`(默认关闭，设 `true` 启用)、`ALLOWED_ORIGINS`、`ALLOWED_MODELS`、`DEEPSEEK_BASE_URL`。
 
 ## 额度规则
 
 - 每个本机身份：10 次/天
-- 每个网络（IPv4 完整地址；IPv6 归并 /64）：20 次/天
+- 每个网络（IPv4 完整地址；IPv6 归并 /64）：10 次/天
 - 全站：300 次/天
 - 按 UTC+8 自然日重置；计数键带 48h TTL 自动过期，不需要定时任务。
 

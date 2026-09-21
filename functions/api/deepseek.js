@@ -6,14 +6,15 @@
  *   POST  转发 Chat Completions，并对免费额度计数（user / ip / global）
  *
  * 设计目标：项目方 Key 只存在于服务端；用户未配置自己的 Key 时走本代理。
- * 额度：user 10/天、ip 20/天、global 300/天，按 UTC+8 自然日重置（日键 + TTL 自动过期，无需定时任务）。
+ * 额度：user 10/天、ip 10/天、global 300/天，按 UTC+8 自然日重置（日键 + TTL 自动过期，无需定时任务）。
  *
  * 需要的环境变量 / 绑定：
  *   DEEPSEEK_API_KEY   必需（Secret）
  *   QUOTA_KV           必需（KV 命名空间绑定）
+ *   FREE_QUOTA_ENABLED 可选，默认关闭；设为 true/1/on/yes 才启用免费额度
  *   IP_SALT            可选（Secret，用于对 IP 做 HMAC 哈希；不配置则退化为明文前缀）
  *   FREE_USER_LIMIT    可选，默认 10
- *   FREE_IP_LIMIT      可选，默认 20
+ *   FREE_IP_LIMIT      可选，默认 10
  *   FREE_GLOBAL_LIMIT  可选，默认 300
  *   ALLOWED_ORIGINS    可选，逗号分隔；默认 https://x6ren.cn,https://www.x6ren.cn
  *   ALLOWED_MODELS     可选，逗号分隔；默认 deepseek-flash,deepseek-v4-pro,deepseek-chat,deepseek-reasoner
@@ -48,7 +49,7 @@ function limits(env) {
   };
   return {
     user: num(env.FREE_USER_LIMIT, 10),
-    ip: num(env.FREE_IP_LIMIT, 20),
+    ip: num(env.FREE_IP_LIMIT, 10),
     global: num(env.FREE_GLOBAL_LIMIT, 300),
   };
 }
@@ -105,7 +106,7 @@ async function decrement(env, key) {
   } catch (_) { /* 回退失败不影响主流程 */ }
 }
 
-/** 全局计数：分片求和后再随机写一个分片，避免单热 key */
+/** 全局计数：分片求和后再随机写一个分片，避免单热 key。返回实际使用的分片以便精确回退。 */
 async function incrementGlobal(env, day, limit) {
   const keys = Array.from({ length: GLOBAL_SHARDS }, (_, i) => `g:${day}:${i}`);
   const values = await Promise.all(keys.map(key => readCounter(env, key)));
@@ -113,15 +114,14 @@ async function incrementGlobal(env, day, limit) {
   if (total >= limit) return { ok: false, total };
   const shard = Math.floor(Math.random() * GLOBAL_SHARDS);
   await increment(env, keys[shard], limit);
-  return { ok: true, total: total + 1 };
+  return { ok: true, total: total + 1, shard };
 }
 
-async function refund(env, { userKey, ipKey, day }) {
-  await Promise.allSettled([
-    decrement(env, userKey),
-    decrement(env, ipKey),
-    decrement(env, `g:${day}:${Math.floor(Math.random() * GLOBAL_SHARDS)}`),
-  ]);
+async function refund(env, { userKey, ipKey, day, shard }) {
+  const targets = [decrement(env, userKey), decrement(env, ipKey)];
+  // 只回退真正自增过的那个分片，避免全局计数在失败时只增不减。
+  if (Number.isInteger(shard)) targets.push(decrement(env, `g:${day}:${shard}`));
+  await Promise.allSettled(targets);
 }
 
 function originAllowed(request, env) {
@@ -139,11 +139,20 @@ function allowedModels(env) {
   return list.length ? list : DEFAULT_MODELS;
 }
 
-const notConfigured = (env) => !env.QUOTA_KV || !env.DEEPSEEK_API_KEY;
+const missingConfig = (env) => !env.QUOTA_KV || !env.DEEPSEEK_API_KEY;
+
+/** 功能开关：默认关闭；只有显式设为 true/1/on/yes 才启用。 */
+function featureEnabled(env) {
+  const raw = String(env.FREE_QUOTA_ENABLED ?? '').trim().toLowerCase();
+  return raw === 'true' || raw === '1' || raw === 'on' || raw === 'yes';
+}
 
 /** GET：返回当前身份今日剩余额度，不计数 */
 export async function onRequestGet({ request, env }) {
-  if (!env.QUOTA_KV) return json({ available: false, error: 'server_not_configured' });
+  // 免费额度只有在「开关开启 + KV 已绑定 + 项目 Key 已配置」时才可用；
+  // 否则必须返回 available:false，避免前端误以为可用。
+  if (!featureEnabled(env)) return json({ available: false, error: 'feature_disabled' });
+  if (missingConfig(env)) return json({ available: false, error: 'server_not_configured' });
   const clientId = sanitizeClientId(request.headers.get('X-Client-Id'));
   if (!clientId) return json({ error: 'bad_client_id' }, 400);
   const { user } = limits(env);
@@ -161,7 +170,8 @@ export async function onRequestGet({ request, env }) {
 /** POST：校验 → 计数 → 转发 → 返回流式结果 */
 export async function onRequestPost({ request, env }) {
   if (!originAllowed(request, env)) return json({ error: 'forbidden' }, 403);
-  if (notConfigured(env)) return json({ error: 'server_not_configured' }, 500);
+  if (!featureEnabled(env)) return json({ error: 'feature_disabled' }, 503);
+  if (missingConfig(env)) return json({ error: 'server_not_configured' }, 500);
 
   const clientId = sanitizeClientId(request.headers.get('X-Client-Id'));
   if (!clientId) return json({ error: 'bad_client_id' }, 400);
@@ -227,17 +237,22 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify(payload),
     });
   } catch (_) {
-    await refund(env, { userKey, ipKey, day });
+    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
     return json({ error: 'upstream_unreachable' }, 502);
   }
 
   // 网络/服务端/上游限流：不扣用户次数
   if (upstream.status === 429 || upstream.status >= 500) {
-    await refund(env, { userKey, ipKey, day });
+    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
     return new Response(upstream.body, {
       status: upstream.status,
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
     });
+  }
+  // 项目方 Key 失效或余额不足：回退额度，并让前端降级为「填写自己的 Key」
+  if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {
+    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
+    return json({ error: 'free_unavailable', upstreamStatus: upstream.status }, 503);
   }
   if (!upstream.ok) {
     const text = await upstream.text().catch(() => '');
