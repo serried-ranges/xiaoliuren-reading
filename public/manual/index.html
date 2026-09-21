@@ -101,6 +101,27 @@
       overflow-wrap: anywhere;
     }
     nav a:hover, .download:hover { color: var(--accent); border-color: var(--accent); }
+      nav a.site-nav__primary {
+        position: relative;
+        border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+        background: linear-gradient(180deg, rgba(255,250,240,.96), rgba(247,234,215,.92));
+        color: var(--accent);
+        font-weight: 800;
+        box-shadow: 0 3px 10px rgba(155,73,53,.12);
+      }
+      nav a.site-nav__primary::after {
+        content: "";
+        position: absolute;
+        inset: 4px;
+        border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
+        border-radius: inherit;
+        pointer-events: none;
+      }
+      nav a.site-nav__primary:hover,
+      nav a.site-nav__primary:focus-visible {
+        background: linear-gradient(180deg, rgba(255,248,234,.98), rgba(243,223,199,.94));
+        box-shadow: 0 5px 14px rgba(155,73,53,.18);
+      }
     .notice {
       max-width: 980px;
       margin: 26px auto 32px;
@@ -215,7 +236,7 @@
       <p class="eyebrow">小六壬 · V3.0.0 · 使用说明书</p>
       <h1>从起念到复盘</h1>
       <p class="lead">一册读懂起卦、排盘、主题切换、记录与 AI 解读。按“提出问题 → 完成起卦 → 查看结果 → 再决定是否使用 AI”的顺序阅读，把复杂留给工具，把判断留给自己。</p>
-      <nav aria-label="资料站导航"><a href="/">排盘应用</a><a href="#manual">阅读手册</a><a href="../privacy/">隐私边界</a><a href="../changelog/">更新记录</a></nav>
+      <nav aria-label="资料站导航"><a class="site-nav__primary" href="/">排盘应用</a><a href="#manual">阅读手册</a><a href="../privacy/">隐私边界</a><a href="../changelog/">更新记录</a></nav>
     </div>
   </header>
 
