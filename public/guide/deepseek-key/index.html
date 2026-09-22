@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="如何注册 DeepSeek 账号、完成实名认证、充值并创建 API Key，用于小六壬的「一键解卦」。">
+  <title>获取 DeepSeek API Key · 小六壬</title>
+  <link rel="stylesheet" href="../../docs/site.css?v=20260921">
+  <style>
+    .steps { margin: 8px 0 0; padding: 0; list-style: none; }
+    .step { margin: 22px 0 0; padding-top: 20px; border-top: 1px dashed #e1d4c3; }
+    .step:first-child { border-top: 0; padding-top: 0; }
+    .step h3 { margin: 0 0 10px; color: #753b2f; font-size: 1.12rem; line-height: 1.5; }
+    .step img { display: block; width: 100%; height: auto; margin: 0 0 10px; border-radius: 14px; }
+    .step p { margin: 6px 0; }
+    .qa { margin: 10px 0 0; }
+    .qa dt { margin-top: 12px; font-weight: 700; color: #5d4f43; }
+    .qa dd { margin: 4px 0 0; color: var(--muted); }
+    .back { margin: 24px 0 0; }
+  </style>
+</head>
+<body>
+  <main class="page-wrap">
+    <nav class="site-nav" aria-label="资料站导航">
+      <a class="site-nav__primary" href="../../index.html">排盘应用</a>
+      <a href="../../manual/index.html">阅读手册</a>
+      <a href="../../privacy/index.html">隐私边界</a>
+      <a href="../../changelog/index.html">更新记录</a>
+    </nav>
+    <article class="page-card">
+      <p class="eyebrow">XIAOLIUREN · GUIDE</p>
+      <h1>获取 DeepSeek API Key</h1>
+      <p class="lead">「一键解卦」需要你自己在 DeepSeek 开放平台获取 API Key。本页按顺序说明注册账号、实名认证、充值额度与创建 Key 的步骤，最后回到应用填写。</p>
+      <p class="meta">适用版本：V3.0.0 · 校对：2026-09-22</p>
+
+      <p class="note"><strong>先说结论：</strong>不填写 Key 也能正常使用排盘、历史记录和 AI 提示词；只有「一键解卦」需要你自己的 Key。本页只是操作参考，具体界面与要求以 DeepSeek 官网当前页面为准。</p>
+
+      <section class="section">
+        <h2>操作步骤</h2>
+        <ol class="steps">
+          <li class="step">
+            <h3>1. 注册 DeepSeek 账号</h3>
+            <img src="images/step-1-register.svg" alt="步骤一示意图：在 DeepSeek 开放平台用手机号注册并登录" width="900" height="300" loading="eager" decoding="async">
+            <p>打开 DeepSeek 开放平台 <strong>platform.deepseek.com</strong>，用手机号注册并登录。</p>
+            <p>请直接访问官网，不要使用来源不明的第三方链接。</p>
+          </li>
+          <li class="step">
+            <h3>2. 完成实名认证</h3>
+            <img src="images/step-2-verify.svg" alt="步骤二示意图：按平台要求提交实名信息完成认证" width="900" height="300" loading="lazy" decoding="async">
+            <p>按平台要求提交实名信息并完成认证；未完成时可能无法充值或正常调用接口。</p>
+            <p>实名信息只提交给 DeepSeek 官方，不要发给任何人。</p>
+          </li>
+          <li class="step">
+            <h3>3. 充值 / 购买额度</h3>
+            <img src="images/step-3-recharge.svg" alt="步骤三示意图：为账户充值，接口按量计费" width="900" height="300" loading="lazy" decoding="async">
+            <p>DeepSeek 接口按量计费，使用前需要账户有余额；充值金额与支付方式以平台页面为准。</p>
+            <p>费用由 DeepSeek 收取，本项目不代付、不参与分成。</p>
+          </li>
+          <li class="step">
+            <h3>4. 创建 API Key</h3>
+            <img src="images/step-4-create-key.svg" alt="步骤四示意图：在 API Keys 页面新建一个 Key" width="900" height="300" loading="lazy" decoding="async">
+            <p>进入「API Keys」页面，新建一个 Key。Key 形如 <strong>sk-…</strong>，通常只完整显示一次。</p>
+            <p>请立即复制并妥善保存；不要截图，也不要发给任何人。</p>
+          </li>
+          <li class="step">
+            <h3>5. 回到小六壬填写</h3>
+            <img src="images/step-5-fill-app.svg" alt="步骤五示意图：在应用的智能解读中粘贴并保存 Key" width="900" height="300" loading="lazy" decoding="async">
+            <p>在应用里打开「更多 → 智能解读」，粘贴并保存 Key；也可以在一键解卦弹窗里直接填写。</p>
+            <p>Key 只保存在当前浏览器，不会上传到本项目服务器。</p>
+          </li>
+        </ol>
+      </section>
+
+      <section class="section">
+        <h2>安全提醒</h2>
+        <ul class="list">
+          <li>API Key 等同于账号凭证：只保存在你自己的设备与浏览器中。</li>
+          <li>不要截图、发到群里，或粘贴到公开页面、反馈和第三方工具。</li>
+          <li>如果怀疑泄露，请立即到 DeepSeek 平台删除该 Key 并新建一个。</li>
+          <li>本项目不代管、不收集、不转售你的 Key；也不会要求你提供 Key。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>费用与边界</h2>
+        <ul class="list">
+          <li>接口按量计费，费用由 DeepSeek 收取；本项目不代付、不分成，也不对额度或结果作保证。</li>
+          <li>建议在平台设置余额或用量提醒，避免意外消耗。</li>
+          <li>本页仅为操作参考，不构成对 DeepSeek 服务的推荐、担保或背书；请以其官网当前页面为准。</li>
+        </ul>
+      </section>
+
+      <section class="section">
+        <h2>常见问题</h2>
+        <dl class="qa">
+          <dt>提示 Key 无效，或没有额度？</dt>
+          <dd>先确认 Key 是否复制完整、账户是否已充值；若仍无效，请在平台删除旧 Key 并新建一个，再回到应用重新保存。</dd>
+          <dt>找不到「API Keys」页面？</dt>
+          <dd>以 DeepSeek 官网当前页面为准；入口名称或位置可能调整。</dd>
+          <dt>可以把 Key 发给你们帮我配置吗？</dt>
+          <dd>不可以。Key 只属于你，请勿发给任何人，包括本项目的维护者。</dd>
+          <dt>换设备后 Key 还在吗？</dt>
+          <dd>Key 保存在当前浏览器、当前身份下；更换设备或清理浏览器数据后需要重新填写。</dd>
+          <dt>不填 Key 能用哪些功能？</dt>
+          <dd>排盘、主题、历史记录、导入导出和 AI 提示词的生成与复制都可以正常使用；只有「一键解卦」需要 Key。</dd>
+        </dl>
+      </section>
+
+      <p class="back"><a href="../../project/index.html">← 返回项目说明</a></p>
+
+      <p class="note"><strong>阅读边界：</strong>本站提供民俗文化体验、学习与记录参考，不替代医疗、法律、财务等专业意见，也不对现实结果作保证。</p>
+    </article>
+    <footer class="site-footer">
+      <div class="footer-links"><a href="../../project/index.html">项目说明</a><a href="../../manual/index.html">阅读手册</a></div>
+      小六壬 V3.0.0 · 公开静态资料站
+    </footer>
+  </main>
+</body>
+</html>
