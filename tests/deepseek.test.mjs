@@ -229,6 +229,37 @@ await ok('FREE_QUOTA_ENABLED=true → 正常可用', async () => {
   assert.equal((await post(env, 'u_test_switch002', '198.51.100.91')).status, 200);
 });
 
+await ok('DeepSeek Chat Completions 示例地址与思考参数可正确透传', async () => {
+  const env = makeEnv(makeKV(), { DEEPSEEK_BASE_URL: 'https://api.deepseek.com' });
+  const original = globalThis.fetch;
+  let captured = null;
+  globalThis.fetch = async (url, options) => {
+    captured = { url, headers: new Headers(options.headers), body: JSON.parse(options.body) };
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    const response = await post(env, 'u_test_deepseek01', '198.51.100.92', {
+      ...BODY,
+      model: 'deepseek-flash',
+      thinking: { type: 'enabled' },
+      reasoning_effort: 'high',
+      stream: false,
+    });
+    assert.equal(response.status, 200);
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(captured.url, 'https://api.deepseek.com/chat/completions');
+  assert.equal(captured.headers.get('Authorization'), 'Bearer sk-test');
+  assert.equal(captured.body.model, 'deepseek-flash');
+  assert.deepEqual(captured.body.thinking, { type: 'enabled' });
+  assert.equal(captured.body.reasoning_effort, 'high');
+  assert.equal(captured.body.stream, false);
+});
+
 // 13) 项目方 Key 失效/余额不足 → 回退额度并返回 free_unavailable，让用户走自带 Key
 await ok('上游 401/402/403 → 503 free_unavailable 且回退额度', async () => {
   for (const status of [401, 402, 403]) {
@@ -251,14 +282,47 @@ await ok('上游网络异常 → 502 upstream_unreachable 且精确回退', asyn
   const clientId = 'u_test_net00001';
   const ip = '198.51.100.99';
   const original = globalThis.fetch;
-  globalThis.fetch = async () => { throw new Error('network down'); };
-  const res = await post(env, clientId, ip);
-  globalThis.fetch = original;
+  let attempts = 0;
+  globalThis.fetch = async () => { attempts++; throw new Error('network down'); };
+  let res;
+  try {
+    res = await post(env, clientId, ip);
+  } finally {
+    globalThis.fetch = original;
+  }
   assert.equal(res.status, 502);
   assert.equal((await res.json()).error, 'upstream_unreachable');
+  assert.equal(attempts, 1, '无法确认请求是否送达时，不得盲目重放计费 POST');
   const after = await (await get(env, clientId, ip)).json();
   assert.equal(after.remaining, 1, '网络异常应回退额度（受 FREE_GLOBAL_LIMIT=1 限制）');
   assert.equal((await post(env, 'u_test_net00002', '198.51.100.98')).status, 200, '全局额度也必须回退');
+});
+
+await ok('明确的连接前瞬时错误只重试一次，成功后只计一次免费额度', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_retry0001';
+  const ip = '198.51.100.98';
+  const original = globalThis.fetch;
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts++;
+    if (attempts === 1) {
+      throw Object.assign(new TypeError('temporary DNS failure'), { cause: { code: 'EAI_AGAIN' } });
+    }
+    return new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    const response = await post(env, clientId, ip);
+    assert.equal(response.status, 200);
+    assert.equal((await response.json()).choices[0].message.content, 'ok');
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(attempts, 2, 'EAI_AGAIN 应进行且仅进行一次安全重试');
+  assert.equal((await (await get(env, clientId, ip)).json()).remaining, 9, '同一次用户操作只消耗一次免费额度');
 });
 
 await ok('上游超时/中断 → 504 upstream_timeout 且回退额度', async () => {
@@ -559,6 +623,80 @@ await ok('并发重复退款只生效一次（reservation 幂等）', async () =
   assert.ok(refunds.every(result => result.state === 'refunded'));
   const status = await get(env, 'u_test_idempotent', 'ip-idempotent');
   assert.equal((await status.json()).remaining, 10);
+});
+
+await ok('IPv4-mapped IPv6 按真实 IPv4 计数，不再共用同一 /64', async () => {
+  const env = makeEnv(makeKV(), { FREE_USER_LIMIT: 100, FREE_IP_LIMIT: 1, FREE_GLOBAL_LIMIT: 100 });
+  const first = await post(env, 'u_test_mapped0001', '::ffff:198.51.100.211');
+  assert.equal(first.status, 200);
+  const second = await post(env, 'u_test_mapped0002', '::ffff:198.51.100.212');
+  assert.equal(second.status, 200, '不同 IPv4-mapped 客户端不应共用网络额度');
+  const third = await post(env, 'u_test_mapped0003', '::ffff:198.51.100.211');
+  assert.equal(third.status, 429);
+  assert.equal((await third.json()).scope, 'ip');
+});
+
+await ok('超长输入 → 413 request_too_large 且不调用上游', async () => {
+  const env = makeEnv(makeKV());
+  const before = upstreamCalls;
+  const res = await post(env, 'u_test_toolarge001', '198.51.100.221', {
+    ...BODY,
+    messages: [{ role: 'user', content: '字'.repeat(70000) }],
+  });
+  assert.equal(res.status, 413);
+  assert.equal((await res.json()).error, 'request_too_large');
+  assert.equal(upstreamCalls, before, '超长请求不得发往模型');
+});
+
+await ok('上游首次 429 退避重试成功后只计一次额度', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_retry429x1';
+  const ip = '198.51.100.222';
+  const original = globalThis.fetch;
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts++;
+    if (attempts === 1) {
+      return new Response(JSON.stringify({ error: 'rate limited' }), {
+        status: 429, headers: { 'Content-Type': 'application/json' },
+      });
+    }
+    return new Response('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n', {
+      status: 200, headers: { 'Content-Type': 'text/event-stream' },
+    });
+  };
+  try {
+    const response = await post(env, clientId, ip);
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n');
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(attempts, 2, '首次 429 应退避重试一次');
+  assert.equal((await (await get(env, clientId, ip)).json()).remaining, 9, '重试成功后只扣一次额度');
+});
+
+await ok('上游持续 429 → 退避重试后仍按限流处理并回退额度', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_retry429x2';
+  const ip = '198.51.100.223';
+  const original = globalThis.fetch;
+  let attempts = 0;
+  globalThis.fetch = async () => {
+    attempts++;
+    return new Response(JSON.stringify({ error: 'rate limited' }), {
+      status: 429, headers: { 'Content-Type': 'application/json' },
+    });
+  };
+  try {
+    const failed = await post(env, clientId, ip);
+    assert.equal(failed.status, 429);
+    assert.deepEqual(await failed.json(), { error: 'upstream_rate_limited', upstreamStatus: 429, quotaRefunded: true });
+  } finally {
+    globalThis.fetch = original;
+  }
+  assert.equal(attempts, 2, '持续限流时最多重试一次');
+  assert.equal((await (await get(env, clientId, ip)).json()).remaining, 10, '持续限流必须回退额度');
 });
 
 console.log(results.join('\n'));

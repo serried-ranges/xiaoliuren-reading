@@ -28,6 +28,7 @@
 const TZ_OFFSET_HOURS = 8;            // UTC+8
 const MAX_OUTPUT_TOKENS = 2000;       // 免费额度的输出上限
 const MAX_MESSAGES = 12;              // 免费额度的消息条数上限
+const MAX_INPUT_CHARS = 60000;        // 免费额度的输入字符上限，避免被当免费长文中转
 const TIAN_CHOU_GRANT = 5;
 const TIAN_CHOU_FAILURE_LIMIT = 3;
 const TIAN_CHOU_DAILY_REDEEM_LIMIT = 3;
@@ -68,11 +69,14 @@ function sanitizeClientId(raw) {
   return value.length >= 8 ? value : '';
 }
 
-/** IPv6 归并到 /64；IPv4 原样返回 */
+/** IPv6 归并到 /64；IPv4 原样返回；IPv4-mapped IPv6（::ffff:1.2.3.4）先还原为 IPv4 再计数 */
 function normalizeIp(raw) {
   const ip = String(raw || '').trim().toLowerCase().split('%')[0];
   if (!ip) return 'unknown';
   if (!ip.includes(':')) return ip;
+  // 否则 ::ffff:a.b.c.d 会被归并成同一个 /64，导致不同 IPv4 客户端共用网络额度。
+  const mapped = ip.match(/^::ffff:(\d{1,3}(?:\.\d{1,3}){3})$/);
+  if (mapped) return mapped[1];
   const [head, tail] = ip.split('::');
   const headParts = head ? head.split(':').filter(Boolean) : [];
   const tailParts = tail !== undefined ? tail.split(':').filter(Boolean) : [];
@@ -384,9 +388,30 @@ async function failedUpstreamResponse(env, day, reservationId, error, status = 5
   return json({ error, quotaRefunded: true }, status);
 }
 
+const SAFE_CONNECT_RETRY_CODES = new Set([
+  'EAI_AGAIN',       // 临时 DNS 解析失败：请求尚未发往模型
+  'ECONNREFUSED',    // 连接未建立
+  'ENETUNREACH',     // 网络路由不可达
+  'EHOSTUNREACH',    // 上游主机不可达
+]);
+
+function upstreamCauseCodes(error) {
+  const codes = [];
+  let current = error;
+  for (let depth = 0; current && depth < 5; depth++, current = current.cause) {
+    const value = String(current?.code || '');
+    if (/^[A-Z0-9_]{1,48}$/i.test(value)) codes.push(value.toUpperCase());
+  }
+  return codes;
+}
+
 function safeUpstreamCauseCode(error) {
-  const value = String(error?.cause?.code || error?.code || '');
-  return /^[A-Z0-9_]{1,48}$/i.test(value) ? value : 'unknown';
+  const codes = upstreamCauseCodes(error);
+  return codes.find(code => SAFE_CONNECT_RETRY_CODES.has(code)) || codes[0] || 'unknown';
+}
+
+function canSafelyRetryUpstream(error) {
+  return upstreamCauseCodes(error).some(code => SAFE_CONNECT_RETRY_CODES.has(code));
 }
 
 function originAllowed(request, env) {
@@ -410,6 +435,20 @@ function hasUsableText(value) {
   return value.some(part => typeof part === 'string'
     ? part.trim().length > 0
     : part && part.type === 'text' && typeof part.text === 'string' && part.text.trim().length > 0);
+}
+
+/** 累计消息的输入字符数；超过上限提前返回，避免完整遍历超长请求。 */
+function messagesCharCount(messages) {
+  let total = 0;
+  for (const message of messages) {
+    if (!message || typeof message !== 'object') continue;
+    total += String(message.role || '').length;
+    total += typeof message.content === 'string'
+      ? message.content.length
+      : JSON.stringify(message.content ?? '').length;
+    if (total > MAX_INPUT_CHARS) return total;
+  }
+  return total;
 }
 
 function hasCompletionText(payload) {
@@ -566,6 +605,9 @@ export async function onRequestPost({ request, env }) {
   if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > MAX_MESSAGES) {
     return json({ error: 'bad_request' }, 400);
   }
+  if (messagesCharCount(body.messages) > MAX_INPUT_CHARS) {
+    return json({ error: 'request_too_large' }, 413);
+  }
   const model = String(body.model || '');
   if (!allowedModels(env).includes(model)) return json({ error: 'model_not_allowed' }, 400);
 
@@ -597,18 +639,58 @@ export async function onRequestPost({ request, env }) {
     : MAX_OUTPUT_TOKENS;
 
   const base = String(env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/+$/, '');
+  const upstreamUrl = base + '/chat/completions';
+  const upstreamOptions = {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify(payload),
+    signal: request.signal,
+  };
   let upstream;
-  try {
-    upstream = await fetch(base + '/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
-      },
-      body: JSON.stringify(payload),
-      signal: request.signal,
-    });
-  } catch (error) {
+  let fetchError = null;
+  let fetchAttempts = 0;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    fetchAttempts++;
+    try {
+      upstream = await fetch(upstreamUrl, upstreamOptions);
+      fetchError = null;
+    } catch (error) {
+      fetchError = error;
+      upstream = undefined;
+      // 仅在可确认连接尚未建立时重试一次，避免对可能已被模型接收的 POST 重复计费。
+      if (attempt === 0 && !request.signal.aborted && canSafelyRetryUpstream(error)) {
+        console.warn('[deepseek proxy] retrying transient upstream connection failure', {
+          rayId: request.headers.get('cf-ray') || null,
+          code: 'upstream_connect_retry',
+          causeCode: safeUpstreamCauseCode(error),
+          retry: 1,
+        });
+        await new Promise(resolve => setTimeout(resolve, 180));
+        if (!request.signal.aborted) continue;
+      }
+      break;
+    }
+    // 429 表示请求被限流拒绝、尚未开始生成，退避一次再试是安全的；
+    // 共享项目 Key 偶发限流时，这一步能明显降低“时灵时不灵”的概率。
+    if (attempt === 0 && upstream.status === 429 && !request.signal.aborted) {
+      console.warn('[deepseek proxy] retrying upstream rate limit', {
+        rayId: request.headers.get('cf-ray') || null,
+        code: 'upstream_rate_limit_retry',
+        retry: 1,
+      });
+      // 释放被限流响应的连接，再进行唯一一次有界重试。
+      await upstream.body?.cancel().catch(() => {});
+      await new Promise(resolve => setTimeout(resolve, 300 + Math.random() * 300));
+      if (!request.signal.aborted) continue;
+    }
+    break;
+  }
+
+  if (fetchError) {
+    const error = fetchError;
     const causeCode = safeUpstreamCauseCode(error);
     const requestAborted = request.signal.aborted;
     const timedOut = error?.name === 'AbortError' || /TIMEOUT|TIMED_OUT/i.test(causeCode);
@@ -620,6 +702,7 @@ export async function onRequestPost({ request, env }) {
       code,
       errorName: String(error?.name || 'Error').slice(0, 40),
       causeCode,
+      fetchAttempts,
     });
     return failedUpstreamResponse(env, day, reservationId, code, status);
   }
