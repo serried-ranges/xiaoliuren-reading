@@ -19,7 +19,8 @@
  *   ALLOWED_ORIGINS    可选，逗号分隔；默认 https://x6ren.cn,https://www.x6ren.cn
  *   ALLOWED_MODELS     可选，逗号分隔；默认 deepseek-flash,deepseek-v4-pro,deepseek-chat,deepseek-reasoner
  *   DEEPSEEK_BASE_URL  可选，默认 https://api.deepseek.com
- *   TEST_QUOTA_CODE    可选 Secret；配置后启用测试兑换码，每次兑换 +10 次
+ *   TIAN_CHOU_CODE  可选 Secret；配置后启用玑衡添筹令，每次兑换 +5 次
+ *   TEST_QUOTA_CODE 旧配置名兼容项；新配置优先
  *
  * 隐私：只计数，不记录问念、排盘摘要或模型输出；IP 以 HMAC 哈希后存储。
  */
@@ -27,6 +28,9 @@
 const TZ_OFFSET_HOURS = 8;            // UTC+8
 const MAX_OUTPUT_TOKENS = 2000;       // 免费额度的输出上限
 const MAX_MESSAGES = 12;              // 免费额度的消息条数上限
+const TIAN_CHOU_GRANT = 5;
+const TIAN_CHOU_FAILURE_LIMIT = 3;
+const TIAN_CHOU_DAILY_REDEEM_LIMIT = 3;
 const DEFAULT_ORIGINS = ['https://x6ren.cn', 'https://www.x6ren.cn'];
 const DEFAULT_MODELS = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'];
 
@@ -98,9 +102,9 @@ const COUNTER_INCREMENT_SQL = `
 
 const COUNTER_BONUS_SQL = `
   INSERT INTO quota_counters (day_key, scope, subject_key, used, bonus, base_limit, updated_at)
-  VALUES (?, ?, ?, 0, 10, ?, ?)
+  VALUES (?, ?, ?, 0, ?, ?, ?)
   ON CONFLICT (day_key, scope, subject_key) DO UPDATE SET
-    bonus = quota_counters.bonus + 10,
+    bonus = quota_counters.bonus + excluded.bonus,
     base_limit = excluded.base_limit,
     updated_at = excluded.updated_at
 `;
@@ -147,8 +151,8 @@ function counterIncrement(db, day, scope, subject, limit) {
   return db.prepare(COUNTER_INCREMENT_SQL).bind(day, scope, subject, limit, Date.now());
 }
 
-function counterBonus(db, day, scope, subject, limit) {
-  return db.prepare(COUNTER_BONUS_SQL).bind(day, scope, subject, limit, Date.now());
+function counterBonus(db, day, scope, subject, bonus, limit) {
+  return db.prepare(COUNTER_BONUS_SQL).bind(day, scope, subject, bonus, limit, Date.now());
 }
 
 function dayBefore(day, days) {
@@ -250,9 +254,12 @@ async function incrementSpecialCounter(env, day, scope, subject, limit) {
   await db.batch([counterIncrement(db, day, scope, subject, limit)]);
 }
 
-async function redeemTestQuota(env, { clientId, ipHash, day, code }) {
-  const expected = String(env.TEST_QUOTA_CODE || '').trim();
-  if (!expected) return json({ error: 'test_quota_unavailable' }, 503);
+async function redeemJihengTianchou(env, { clientId, ipHash, day, code, legacy = false }) {
+  const expected = String(env.TIAN_CHOU_CODE || env.TEST_QUOTA_CODE || '').trim();
+  const errors = legacy
+    ? { unavailable: 'test_quota_unavailable', invalid: 'invalid_test_quota_code', locked: 'test_code_locked', daily: 'test_quota_daily_limit' }
+    : { unavailable: 'jiheng_tianchou_unavailable', invalid: 'invalid_jiheng_tianchou_code', locked: 'jiheng_tianchou_locked', daily: 'jiheng_tianchou_daily_limit' };
+  if (!expected) return json({ error: errors.unavailable }, 503);
   const provided = String(code || '').trim();
   const validCode = provided.length >= 8 && provided.length <= 128
     && await matchesSecretCode(provided, expected);
@@ -266,39 +273,41 @@ async function redeemTestQuota(env, { clientId, ipHash, day, code }) {
   } catch (_) {
     return json({ error: 'quota_database_unavailable' }, 503);
   }
-  if ((Number(failedRow?.used) || 0) >= 8) return json({ error: 'test_code_locked' }, 429);
+  if ((Number(failedRow?.used) || 0) >= TIAN_CHOU_FAILURE_LIMIT) return json({ error: errors.locked }, 429);
 
   if (!validCode) {
     try {
-      await incrementSpecialCounter(env, day, 'failed_ip', ipHash, 8);
+      await incrementSpecialCounter(env, day, 'failed_ip', ipHash, TIAN_CHOU_FAILURE_LIMIT);
     } catch (error) {
       if (String(error?.message || error).includes('test_code_locked')) {
-        return json({ error: 'test_code_locked' }, 429);
+        return json({ error: errors.locked }, 429);
       }
       return json({ error: 'quota_database_unavailable' }, 503);
     }
-    return json({ error: 'invalid_test_quota_code' }, 400);
+    return json({ error: errors.invalid }, 400);
   }
 
   try {
     const result = await db.batch([
-      counterIncrement(db, day, 'redeem_user', clientId, 20),
-      counterIncrement(db, day, 'redeem_ip', ipHash, 20),
-      counterBonus(db, day, 'user', clientId, base.user),
-      counterBonus(db, day, 'ip', ipHash, base.ip),
+      counterIncrement(db, day, 'redeem_user', clientId, TIAN_CHOU_DAILY_REDEEM_LIMIT),
+      counterIncrement(db, day, 'redeem_ip', ipHash, TIAN_CHOU_DAILY_REDEEM_LIMIT),
+      counterBonus(db, day, 'user', clientId, TIAN_CHOU_GRANT, base.user),
+      counterBonus(db, day, 'ip', ipHash, TIAN_CHOU_GRANT, base.ip),
       db.prepare(COUNTER_SELECT_SQL).bind(day, clientId, ipHash, ipHash),
     ]);
     const state = quotaStateFromRows(env, clientId, ipHash, result[4]?.results);
     return json({
       ok: true,
-      granted: 10,
+      granted: TIAN_CHOU_GRANT,
       limit: state.userLimit,
       remaining: state.remaining,
+      jihengTianchouEnabled: true,
+      // Older published frontends still read this field.
       testQuotaEnabled: true,
     });
   } catch (error) {
     if (String(error?.message || error).includes('test_quota_daily_limit')) {
-      return json({ error: 'test_quota_daily_limit' }, 429);
+      return json({ error: errors.daily }, 429);
     }
     return json({ error: 'quota_database_unavailable' }, 503);
   }
@@ -373,6 +382,11 @@ function refundUnconfirmed(error) {
 async function failedUpstreamResponse(env, day, reservationId, error, status = 502) {
   if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed(error);
   return json({ error, quotaRefunded: true }, status);
+}
+
+function safeUpstreamCauseCode(error) {
+  const value = String(error?.cause?.code || error?.code || '');
+  return /^[A-Z0-9_]{1,48}$/i.test(value) ? value : 'unknown';
 }
 
 function originAllowed(request, env) {
@@ -513,7 +527,9 @@ export async function onRequestGet({ request, env }) {
     timezone: 'UTC+8',
     limit: quota.userLimit,
     remaining: quota.remaining,
-    testQuotaEnabled: Boolean(String(env.TEST_QUOTA_CODE || '').trim()),
+    jihengTianchouEnabled: Boolean(String(env.TIAN_CHOU_CODE || env.TEST_QUOTA_CODE || '').trim()),
+    // Older published frontends still read this field.
+    testQuotaEnabled: Boolean(String(env.TIAN_CHOU_CODE || env.TEST_QUOTA_CODE || '').trim()),
   });
 }
 
@@ -537,12 +553,13 @@ export async function onRequestPost({ request, env }) {
   const day = dayKey();
   const ip = normalizeIp(request.headers.get('CF-Connecting-IP'));
   const ipHash = await hashIp(ip, env.IP_SALT);
-  if (body.action === 'redeem_test_quota') {
-    return redeemTestQuota(env, {
+  if (body.action === 'redeem_jiheng_tianchou' || body.action === 'redeem_test_quota') {
+    return redeemJihengTianchou(env, {
       clientId,
       ipHash,
       day,
       code: body.code,
+      legacy: body.action === 'redeem_test_quota',
     });
   }
 
@@ -591,17 +608,32 @@ export async function onRequestPost({ request, env }) {
       body: JSON.stringify(payload),
       signal: request.signal,
     });
-  } catch (_) {
-    return failedUpstreamResponse(env, day, reservationId, 'upstream_unreachable');
+  } catch (error) {
+    const causeCode = safeUpstreamCauseCode(error);
+    const requestAborted = request.signal.aborted;
+    const timedOut = error?.name === 'AbortError' || /TIMEOUT|TIMED_OUT/i.test(causeCode);
+    const code = requestAborted ? 'upstream_aborted' : timedOut ? 'upstream_timeout' : 'upstream_unreachable';
+    const status = code === 'upstream_unreachable' ? 502 : 504;
+    // 仅记录可诊断元信息；不记录 Key、问念、IP 或模型请求正文。
+    console.error('[deepseek proxy] upstream fetch failed', {
+      rayId: request.headers.get('cf-ray') || null,
+      code,
+      errorName: String(error?.name || 'Error').slice(0, 40),
+      causeCode,
+    });
+    return failedUpstreamResponse(env, day, reservationId, code, status);
   }
 
   // 网络/服务端/上游限流：不扣用户次数
   if (upstream.status === 429 || upstream.status >= 500) {
     if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed('upstream_error');
-    return new Response(upstream.body, {
-      status: upstream.status,
-      headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
+    const error = upstream.status === 429 ? 'upstream_rate_limited' : 'upstream_http_error';
+    console.warn('[deepseek proxy] upstream returned error status', {
+      rayId: request.headers.get('cf-ray') || null,
+      code: error,
+      upstreamStatus: upstream.status,
     });
+    return json({ error, upstreamStatus: upstream.status, quotaRefunded: true }, upstream.status);
   }
   // 项目方 Key 失效或余额不足：回退额度，并让前端降级为「填写自己的 Key」
   if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {

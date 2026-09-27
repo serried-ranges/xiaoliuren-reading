@@ -14,7 +14,7 @@
        ├─ public/：公开静态页面
        └─ functions/api/deepseek.js：模型代理与额度逻辑
             └─ QUOTA_DB：Cloudflare D1 数据库
-                 ├─ quota_counters：每日用户/IP/全站计数与测试额度
+                 ├─ quota_counters：每日用户/IP/全站计数与玑衡添筹记录
                  └─ quota_reservations：预占、提交、退款状态
 ```
 
@@ -87,12 +87,15 @@ Cloudflare Dashboard → **Workers & Pages → Pages → 资料站项目 → Set
 | `DEEPSEEK_API_KEY` | Secret | 项目方模型 Key；只放在 Pages |
 | `FREE_QUOTA_ENABLED` | Text | 填 `true` 或 `1` 才开启免费代理 |
 | `IP_SALT` | Secret，推荐 | 稳定随机值，用于哈希 IP；更换会改变 IP 额度标识 |
-| `TEST_QUOTA_CODE` | Secret，可选 | 配置后才开放测试兑换码 |
+| `TIAN_CHOU_CODE` | Secret，可选 | 配置后开放玑衡添筹令；每次兑换增加 5 次机会 |
+| `TEST_QUOTA_CODE` | Secret，旧配置兼容 | 未设置新配置时读取此旧值；设置 `TIAN_CHOU_CODE` 后以新值为准，可再移除旧项 |
 | `FREE_USER_LIMIT` | Text，可选 | 每个浏览器身份每日上限，默认 10 |
 | `FREE_IP_LIMIT` | Text，可选 | 每个 IP 每日上限，默认 10 |
 | `FREE_GLOBAL_LIMIT` | Text，可选 | 全站每日上限，默认 300 |
 
 `QUOTA_DB` 是 D1 资源绑定，不是普通环境变量。旧 `QUOTA_KV` 可暂时保留，但新代码不再使用它；验证新链路正常后再移除。D1 不会自动导入旧 KV 当天的计数，切换额度存储时当天的剩余次数会重新计数，建议选择低流量时段切换。
+
+玑衡添筹规则：每次兑换增加 5 次；每个浏览器身份与 IP 每天最多兑换 3 次。同一 IP 当天累计 3 次无效兑换后，页面会禁用入口，服务端也会拒绝该网络继续兑换，刷新页面不能绕过；次数按 UTC+8 自然日重置。共用网络的设备共享失败次数。
 
 ## 免费计划边界
 
@@ -123,7 +126,7 @@ curl.exe -i -H "X-Client-Id: quota-check-0001" https://你的域名/api/deepseek
   "timezone": "UTC+8",
   "limit": 10,
   "remaining": 10,
-  "testQuotaEnabled": false
+  "jihengTianchouEnabled": false
 }
 ```
 

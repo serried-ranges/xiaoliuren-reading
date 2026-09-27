@@ -161,6 +161,7 @@ await ok('上游 5xx 不扣次数', async () => {
   upstreamStatus = 500;
   const failed = await post(env, clientId, ip);
   assert.equal(failed.status, 500);
+  assert.deepEqual(await failed.json(), { error: 'upstream_http_error', upstreamStatus: 500, quotaRefunded: true });
   upstreamStatus = 200;
   const after = await (await get(env, clientId, ip)).json();
   assert.equal(after.remaining, 10, '失败请求应回退额度');
@@ -260,44 +261,111 @@ await ok('上游网络异常 → 502 upstream_unreachable 且精确回退', asyn
   assert.equal((await post(env, 'u_test_net00002', '198.51.100.98')).status, 200, '全局额度也必须回退');
 });
 
-// 15) 测试码只在服务端配置后开放，兑换额度不触发模型请求
-await ok('测试额度兑换开关由 TEST_QUOTA_CODE 服务端 Secret 控制', async () => {
+await ok('上游超时/中断 → 504 upstream_timeout 且回退额度', async () => {
   const env = makeEnv(makeKV());
-  const withoutSecret = await (await get(env, 'u_test_code001', '198.51.100.101')).json();
-  assert.equal(withoutSecret.testQuotaEnabled, false);
-  const unavailable = await post(env, 'u_test_code001', '198.51.100.101', { action: 'redeem_test_quota', code: 'test-code-123' });
-  assert.equal(unavailable.status, 503);
-
-  env.TEST_QUOTA_CODE = 'test-code-123456';
-  const withSecret = await (await get(env, 'u_test_code001', '198.51.100.101')).json();
-  assert.equal(withSecret.testQuotaEnabled, true);
-  assert.equal(withSecret.remaining, 10);
+  const clientId = 'u_test_timeout01';
+  const ip = '198.51.100.109';
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => { throw new DOMException('request timed out', 'AbortError'); };
+  try {
+    const failed = await post(env, clientId, ip);
+    assert.equal(failed.status, 504);
+    assert.deepEqual(await failed.json(), { error: 'upstream_timeout', quotaRefunded: true });
+    assert.equal((await (await get(env, clientId, ip)).json()).remaining, 10);
+  } finally {
+    globalThis.fetch = original;
+  }
 });
 
-// 16) 兑换每次 +10，按用户与 IP 同时扩容，仍遵守每日兑换上限
-await ok('正确测试码每次兑换增加 10 次且不调用模型', async () => {
+await ok('上游 HTTP 429 → 503 upstream_rate_limited 且回退额度', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_up429001';
+  upstreamStatus = 429;
+  const failed = await post(env, clientId, '198.51.100.110');
   upstreamStatus = 200;
-  const env = makeEnv(makeKV(), { TEST_QUOTA_CODE: 'test-code-123456' });
-  const clientId = 'u_test_codegrant01';
+  assert.equal(failed.status, 429);
+  assert.deepEqual(await failed.json(), { error: 'upstream_rate_limited', upstreamStatus: 429, quotaRefunded: true });
+  assert.equal((await (await get(env, clientId, '198.51.100.110')).json()).remaining, 10);
+});
+
+// 15) 玑衡添筹令由新 Secret 控制，并兼容旧配置和旧前端动作
+await ok('玑衡添筹令由 TIAN_CHOU_CODE 控制并兼容旧配置', async () => {
+  const env = makeEnv(makeKV());
+  const withoutSecret = await (await get(env, 'u_jiheng_chou001', '198.51.100.101')).json();
+  assert.equal(withoutSecret.jihengTianchouEnabled, false);
+  assert.equal(withoutSecret.testQuotaEnabled, false);
+  const unavailable = await post(env, 'u_jiheng_chou001', '198.51.100.101', { action: 'redeem_jiheng_tianchou', code: 'grant-code-123' });
+  assert.equal(unavailable.status, 503);
+  assert.equal((await unavailable.json()).error, 'jiheng_tianchou_unavailable');
+
+  env.TIAN_CHOU_CODE = 'grant-code-123456';
+  const withSecret = await (await get(env, 'u_jiheng_chou001', '198.51.100.101')).json();
+  assert.equal(withSecret.jihengTianchouEnabled, true);
+  assert.equal(withSecret.testQuotaEnabled, true);
+  assert.equal(withSecret.remaining, 10);
+
+  const legacyEnv = makeEnv(makeKV(), { TEST_QUOTA_CODE: 'legacy-code-123456' });
+  const legacyState = await (await get(legacyEnv, 'u_jiheng_old001', '198.51.100.111')).json();
+  assert.equal(legacyState.jihengTianchouEnabled, true, '旧 Secret 应开启新名称功能');
+  const legacyRedeemed = await post(legacyEnv, 'u_jiheng_old001', '198.51.100.111', {
+    action: 'redeem_test_quota', code: 'legacy-code-123456',
+  });
+  assert.equal(legacyRedeemed.status, 200, '旧版客户端动作应继续可用');
+
+  const lockedEnv = makeEnv(makeKV(), { TIAN_CHOU_CODE: 'grant-code-123456' });
+  const attackIp = '198.51.100.112';
+  for (let i = 0; i < 3; i++) {
+    const wrong = await post(lockedEnv, `u_jiheng_bad${i}001`, attackIp, {
+      action: 'redeem_jiheng_tianchou', code: 'wrong-code-123',
+    });
+    assert.equal(wrong.status, 400, `第 ${i + 1} 次错误兑换应计入失败次数`);
+  }
+  const afterReload = await post(lockedEnv, 'u_jiheng_reload01', attackIp, {
+    action: 'redeem_jiheng_tianchou', code: 'grant-code-123456',
+  });
+  assert.equal(afterReload.status, 429, '同一 IP 第三次失败后，刷新或换身份也不能继续兑换');
+  assert.equal((await afterReload.json()).error, 'jiheng_tianchou_locked');
+});
+
+// 16) 玑衡添筹每次 +5，按用户与 IP 同时扩容，仍遵守每日兑换上限
+await ok('有效玑衡添筹令每次增加 5 次且不调用模型', async () => {
+  upstreamStatus = 200;
+  const env = makeEnv(makeKV(), { TIAN_CHOU_CODE: 'grant-code-123456' });
+  const clientId = 'u_jiheng_grant01';
   const ip = '198.51.100.102';
   const beforeCalls = upstreamCalls;
-  const invalid = await post(env, clientId, ip, { action: 'redeem_test_quota', code: 'wrong-code-123' });
+  const invalid = await post(env, clientId, ip, { action: 'redeem_jiheng_tianchou', code: 'wrong-code-123' });
   assert.equal(invalid.status, 400);
+  assert.equal((await invalid.json()).error, 'invalid_jiheng_tianchou_code');
   assert.equal((await (await get(env, clientId, ip)).json()).remaining, 10, '错误兑换码不得增加额度');
 
   for (let i = 0; i < 10; i++) assert.equal((await post(env, clientId, ip)).status, 200);
-  const redeemed = await post(env, clientId, ip, { action: 'redeem_test_quota', code: 'test-code-123456' });
+  const redeemed = await post(env, clientId, ip, { action: 'redeem_jiheng_tianchou', code: 'grant-code-123456' });
   assert.equal(redeemed.status, 200);
   const grant = await redeemed.json();
-  assert.equal(grant.granted, 10);
-  assert.equal(grant.limit, 20);
-  assert.equal(grant.remaining, 10);
+  assert.equal(grant.granted, 5);
+  assert.equal(grant.jihengTianchouEnabled, true);
+  assert.equal(grant.limit, 15);
+  assert.equal(grant.remaining, 5);
   assert.equal(upstreamCalls - beforeCalls, 10, '兑换本身不应调用上游模型');
-  for (let i = 0; i < 10; i++) assert.equal((await post(env, clientId, ip)).status, 200);
+  for (let i = 0; i < 5; i++) assert.equal((await post(env, clientId, ip)).status, 200);
   const exhausted = await post(env, clientId, ip);
   assert.equal(exhausted.status, 429);
   assert.equal((await exhausted.json()).scope, 'user');
   assert.equal((await (await get(env, clientId, ip)).json()).remaining, 0);
+});
+
+await ok('玑衡添筹令每日兑换上限为 3 次', async () => {
+  const env = makeEnv(makeKV(), { TIAN_CHOU_CODE: 'grant-code-123456' });
+  const clientId = 'u_jiheng_dailycap1';
+  const ip = '198.51.100.113';
+  for (let i = 0; i < 3; i++) {
+    assert.equal((await post(env, clientId, ip, { action: 'redeem_jiheng_tianchou', code: 'grant-code-123456' })).status, 200);
+  }
+  const overLimit = await post(env, clientId, ip, { action: 'redeem_jiheng_tianchou', code: 'grant-code-123456' });
+  assert.equal(overLimit.status, 429);
+  assert.equal((await overLimit.json()).error, 'jiheng_tianchou_daily_limit');
+  assert.equal((await (await get(env, clientId, ip)).json()).limit, 25, '每日 3 次 × 5 次加额');
 });
 
 // 17) 上游任意非 2xx 都回退额度，避免失败响应消耗次数
