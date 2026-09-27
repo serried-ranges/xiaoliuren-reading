@@ -138,6 +138,7 @@ h1 {
 .secondary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-auto-rows: 1fr;
   gap: 12px;
   margin: 16px 0 0;
 }
@@ -335,6 +336,7 @@ h1 {
   .page-card { border-radius: 18px; padding: 20px 16px; }
   .grid,
   .secondary-grid { grid-template-columns: 1fr; }
+  .secondary-grid { grid-auto-rows: auto; }
   h1 { font-size: clamp(32px, 9.6vw, 44px); }
   .lead { font-size: 16px; line-height: 1.8; }
   .link-card,
