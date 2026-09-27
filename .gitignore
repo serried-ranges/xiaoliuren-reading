@@ -5,3 +5,6 @@
 .wrangler/
 wrangler.local.toml
 .dev.vars
+
+# OpenCode 运行环境沙箱（非项目文件）
+opencode-sbx/
