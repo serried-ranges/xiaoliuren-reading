@@ -219,5 +219,58 @@ await ok('上游网络异常 → 502 upstream_unreachable 且精确回退', asyn
   assert.equal(globalSum, 0, '全局分片应精确回退为 0');
 });
 
+// 15) 测试码只在服务端配置后开放，兑换额度不触发模型请求
+await ok('测试额度兑换开关由 TEST_QUOTA_CODE 服务端 Secret 控制', async () => {
+  const env = makeEnv(makeKV());
+  const withoutSecret = await (await get(env, 'u_test_code001', '198.51.100.101')).json();
+  assert.equal(withoutSecret.testQuotaEnabled, false);
+  const unavailable = await post(env, 'u_test_code001', '198.51.100.101', { action: 'redeem_test_quota', code: 'test-code-123' });
+  assert.equal(unavailable.status, 503);
+
+  env.TEST_QUOTA_CODE = 'test-code-123456';
+  const withSecret = await (await get(env, 'u_test_code001', '198.51.100.101')).json();
+  assert.equal(withSecret.testQuotaEnabled, true);
+  assert.equal(withSecret.remaining, 10);
+});
+
+// 16) 兑换每次 +10，按用户与 IP 同时扩容，仍遵守每日兑换上限
+await ok('正确测试码每次兑换增加 10 次且不调用模型', async () => {
+  upstreamStatus = 200;
+  const env = makeEnv(makeKV(), { TEST_QUOTA_CODE: 'test-code-123456' });
+  const clientId = 'u_test_codegrant01';
+  const ip = '198.51.100.102';
+  const beforeCalls = upstreamCalls;
+  const invalid = await post(env, clientId, ip, { action: 'redeem_test_quota', code: 'wrong-code-123' });
+  assert.equal(invalid.status, 400);
+  assert.equal((await (await get(env, clientId, ip)).json()).remaining, 10, '错误兑换码不得增加额度');
+
+  for (let i = 0; i < 10; i++) assert.equal((await post(env, clientId, ip)).status, 200);
+  const redeemed = await post(env, clientId, ip, { action: 'redeem_test_quota', code: 'test-code-123456' });
+  assert.equal(redeemed.status, 200);
+  const grant = await redeemed.json();
+  assert.equal(grant.granted, 10);
+  assert.equal(grant.limit, 20);
+  assert.equal(grant.remaining, 10);
+  assert.equal(upstreamCalls - beforeCalls, 10, '兑换本身不应调用上游模型');
+  for (let i = 0; i < 10; i++) assert.equal((await post(env, clientId, ip)).status, 200);
+  const exhausted = await post(env, clientId, ip);
+  assert.equal(exhausted.status, 429);
+  assert.equal((await exhausted.json()).scope, 'user');
+  assert.equal((await (await get(env, clientId, ip)).json()).remaining, 0);
+});
+
+// 17) 上游任意非 2xx 都回退额度，避免失败响应消耗次数
+await ok('上游 4xx 失败请求会回退额度', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_400refund1';
+  const ip = '198.51.100.103';
+  upstreamStatus = 400;
+  const failed = await post(env, clientId, ip);
+  assert.equal(failed.status, 400);
+  upstreamStatus = 200;
+  const after = await (await get(env, clientId, ip)).json();
+  assert.equal(after.remaining, 10);
+});
+
 console.log(results.join('\n'));
 console.log(`\n代理验证通过：${results.length} 项；上游调用 ${upstreamCalls} 次`);

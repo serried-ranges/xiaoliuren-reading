@@ -19,6 +19,7 @@
  *   ALLOWED_ORIGINS    可选，逗号分隔；默认 https://x6ren.cn,https://www.x6ren.cn
  *   ALLOWED_MODELS     可选，逗号分隔；默认 deepseek-flash,deepseek-v4-pro,deepseek-chat,deepseek-reasoner
  *   DEEPSEEK_BASE_URL  可选，默认 https://api.deepseek.com
+ *   TEST_QUOTA_CODE    可选 Secret；配置后启用测试兑换码，每次兑换 +10 次
  *
  * 隐私：只计数，不记录问念、排盘摘要或模型输出；IP 以 HMAC 哈希后存储。
  */
@@ -28,6 +29,9 @@ const TTL_SECONDS = 60 * 60 * 48;     // 48 小时覆盖跨天
 const GLOBAL_SHARDS = 4;              // 全局计数分片，降低单 key 写频率
 const MAX_OUTPUT_TOKENS = 2000;       // 免费额度的输出上限
 const MAX_MESSAGES = 12;              // 免费额度的消息条数上限
+const TEST_QUOTA_GRANT = 10;           // 测试兑换码每次增加 10 次
+const TEST_QUOTA_MAX_REDEEMS = 20;     // 每身份 / IP 每日最多兑换 20 次
+const TEST_QUOTA_MAX_FAILED_CODES = 8;
 const DEFAULT_ORIGINS = ['https://x6ren.cn', 'https://www.x6ren.cn'];
 const DEFAULT_MODELS = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'];
 
@@ -106,6 +110,79 @@ async function decrement(env, key) {
   } catch (_) { /* 回退失败不影响主流程 */ }
 }
 
+async function addCounter(env, key, amount) {
+  const next = (await readCounter(env, key)) + amount;
+  await env.QUOTA_KV.put(key, String(next), { expirationTtl: TTL_SECONDS });
+  return next;
+}
+
+async function matchesSecretCode(input, expected) {
+  const encoder = new TextEncoder();
+  const [inputHash, expectedHash] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(input)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected)),
+  ]);
+  const left = new Uint8Array(inputHash);
+  const right = new Uint8Array(expectedHash);
+  let mismatch = 0;
+  for (let i = 0; i < left.length; i++) mismatch |= left[i] ^ right[i];
+  return mismatch === 0;
+}
+
+async function quotaState(env, clientId, ipHash, day) {
+  const base = limits(env);
+  const [userUsed, ipUsed, userBonus, ipBonus] = await Promise.all([
+    readCounter(env, `u:${clientId}:${day}`),
+    readCounter(env, `ip:${ipHash}:${day}`),
+    readCounter(env, `bonus:u:${clientId}:${day}`),
+    readCounter(env, `bonus:ip:${ipHash}:${day}`),
+  ]);
+  const userLimit = base.user + userBonus;
+  const ipLimit = base.ip + ipBonus;
+  return {
+    userUsed, ipUsed, userLimit, ipLimit,
+    remaining: Math.max(0, Math.min(userLimit - userUsed, ipLimit - ipUsed)),
+  };
+}
+
+async function redeemTestQuota(env, { clientId, ipHash, day, code }) {
+  const expected = String(env.TEST_QUOTA_CODE || '').trim();
+  if (!expected) return json({ error: 'test_quota_unavailable' }, 503);
+
+  const failedKey = `test:failed:${ipHash}:${day}`;
+  const failed = await readCounter(env, failedKey);
+  if (failed >= TEST_QUOTA_MAX_FAILED_CODES) return json({ error: 'test_code_locked' }, 429);
+
+  const provided = String(code || '').trim();
+  if (provided.length < 8 || provided.length > 128 || !(await matchesSecretCode(provided, expected))) {
+    await increment(env, failedKey, TEST_QUOTA_MAX_FAILED_CODES);
+    return json({ error: 'invalid_test_quota_code' }, 400);
+  }
+
+  const userRedeemsKey = `test:redeems:u:${clientId}:${day}`;
+  const ipRedeemsKey = `test:redeems:ip:${ipHash}:${day}`;
+  const userRedeem = await increment(env, userRedeemsKey, TEST_QUOTA_MAX_REDEEMS);
+  if (!userRedeem.ok) return json({ error: 'test_quota_daily_limit' }, 429);
+  const ipRedeem = await increment(env, ipRedeemsKey, TEST_QUOTA_MAX_REDEEMS);
+  if (!ipRedeem.ok) {
+    await decrement(env, userRedeemsKey);
+    return json({ error: 'test_quota_daily_limit' }, 429);
+  }
+
+  await Promise.all([
+    addCounter(env, `bonus:u:${clientId}:${day}`, TEST_QUOTA_GRANT),
+    addCounter(env, `bonus:ip:${ipHash}:${day}`, TEST_QUOTA_GRANT),
+  ]);
+  const quota = await quotaState(env, clientId, ipHash, day);
+  return json({
+    ok: true,
+    granted: TEST_QUOTA_GRANT,
+    limit: quota.userLimit,
+    remaining: quota.remaining,
+    testQuotaEnabled: true,
+  });
+}
+
 /** 全局计数：分片求和后再随机写一个分片，避免单热 key。返回实际使用的分片以便精确回退。 */
 async function incrementGlobal(env, day, limit) {
   const keys = Array.from({ length: GLOBAL_SHARDS }, (_, i) => `g:${day}:${i}`);
@@ -155,15 +232,17 @@ export async function onRequestGet({ request, env }) {
   if (missingConfig(env)) return json({ available: false, error: 'server_not_configured' });
   const clientId = sanitizeClientId(request.headers.get('X-Client-Id'));
   if (!clientId) return json({ error: 'bad_client_id' }, 400);
-  const { user } = limits(env);
   const day = dayKey();
-  const used = await readCounter(env, `u:${clientId}:${day}`);
+  const ip = normalizeIp(request.headers.get('CF-Connecting-IP'));
+  const ipHash = await hashIp(ip, env.IP_SALT);
+  const quota = await quotaState(env, clientId, ipHash, day);
   return json({
     available: true,
     day,
     timezone: 'UTC+8',
-    limit: user,
-    remaining: Math.max(0, user - used),
+    limit: quota.userLimit,
+    remaining: quota.remaining,
+    testQuotaEnabled: Boolean(String(env.TEST_QUOTA_CODE || '').trim()),
   });
 }
 
@@ -183,6 +262,19 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'bad_request' }, 400);
   }
   if (!body || typeof body !== 'object') return json({ error: 'bad_request' }, 400);
+
+  const day = dayKey();
+  const ip = normalizeIp(request.headers.get('CF-Connecting-IP'));
+  const ipHash = await hashIp(ip, env.IP_SALT);
+  if (body.action === 'redeem_test_quota') {
+    return redeemTestQuota(env, {
+      clientId,
+      ipHash,
+      day,
+      code: body.code,
+    });
+  }
+
   if (!Array.isArray(body.messages) || body.messages.length === 0 || body.messages.length > MAX_MESSAGES) {
     return json({ error: 'bad_request' }, 400);
   }
@@ -190,19 +282,17 @@ export async function onRequestPost({ request, env }) {
   if (!allowedModels(env).includes(model)) return json({ error: 'model_not_allowed' }, 400);
 
   const limit = limits(env);
-  const day = dayKey();
-  const ip = normalizeIp(request.headers.get('CF-Connecting-IP'));
-  const ipHash = await hashIp(ip, env.IP_SALT);
   const userKey = `u:${clientId}:${day}`;
   const ipKey = `ip:${ipHash}:${day}`;
+  const currentQuota = await quotaState(env, clientId, ipHash, day);
 
-  const userRes = await increment(env, userKey, limit.user);
-  if (!userRes.ok) return json({ error: 'daily_limit', scope: 'user', limit: limit.user, day }, 429);
+  const userRes = await increment(env, userKey, currentQuota.userLimit);
+  if (!userRes.ok) return json({ error: 'daily_limit', scope: 'user', limit: currentQuota.userLimit, day }, 429);
 
-  const ipRes = await increment(env, ipKey, limit.ip);
+  const ipRes = await increment(env, ipKey, currentQuota.ipLimit);
   if (!ipRes.ok) {
     await refund(env, { userKey, ipKey, day });
-    return json({ error: 'daily_limit', scope: 'ip', limit: limit.ip, day }, 429);
+    return json({ error: 'daily_limit', scope: 'ip', limit: currentQuota.ipLimit, day }, 429);
   }
 
   const globalRes = await incrementGlobal(env, day, limit.global);
@@ -255,6 +345,8 @@ export async function onRequestPost({ request, env }) {
     return json({ error: 'free_unavailable', upstreamStatus: upstream.status }, 503);
   }
   if (!upstream.ok) {
+    // 任意失败响应均不应消耗用户免费次数；否则参数类 4xx 会产生“失败也扣额”的错觉。
+    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
     const text = await upstream.text().catch(() => '');
     return new Response(text || JSON.stringify({ error: 'upstream_error' }), {
       status: upstream.status,
@@ -267,8 +359,8 @@ export async function onRequestPost({ request, env }) {
     headers: {
       'Content-Type': upstream.headers.get('Content-Type') || 'text/event-stream; charset=utf-8',
       'Cache-Control': 'no-store',
-      'X-Quota-Remaining': String(Math.max(0, limit.user - userRes.used)),
-      'X-Quota-Limit': String(limit.user),
+      'X-Quota-Remaining': String(Math.max(0, Math.min(currentQuota.userLimit - userRes.used, currentQuota.ipLimit - ipRes.used))),
+      'X-Quota-Limit': String(currentQuota.userLimit),
     },
   });
 }
