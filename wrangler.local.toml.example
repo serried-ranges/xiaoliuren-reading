@@ -1,0 +1,9 @@
+name = "xiaoliuren-reading-local"
+compatibility_date = "2026-09-28"
+pages_build_output_dir = "./public"
+
+[[d1_databases]]
+binding = "QUOTA_DB"
+database_name = "xiaoliuren-free-quota"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+preview_database_id = "QUOTA_DB"

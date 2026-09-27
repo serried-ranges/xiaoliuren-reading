@@ -5,15 +5,50 @@
  * 覆盖：额度查询、用户/网络/全局上限、额度回退、来源校验、模型白名单、未配置降级。
  */
 import assert from 'node:assert/strict';
-import { onRequestGet, onRequestPost } from '../functions/api/deepseek.js';
+import { readFileSync } from 'node:fs';
+import { DatabaseSync } from 'node:sqlite';
+import { onRequestGet, onRequestPost, reserveQuota, settleQuota } from '../functions/api/deepseek.js';
 
-function makeKV() {
-  const map = new Map();
-  return {
-    _map: map,
-    async get(key) { return map.has(key) ? map.get(key) : null; },
-    async put(key, value) { map.set(key, String(value)); },
-  };
+// 用真实 SQLite 执行 D1 schema 与触发器，模拟 D1 batch 的事务性和串行写入。
+const schema = readFileSync(new URL('../quota/schema.sql', import.meta.url), 'utf8');
+const makeKV = () => null;
+
+class MemoryStatement {
+  constructor(db, sql, params = []) { Object.assign(this, { db, sql, params }); }
+  bind(...params) { return new MemoryStatement(this.db, this.sql, params); }
+  async all() { return { results: this.db.prepare(this.sql).all(...this.params) }; }
+  async first() { return this.db.prepare(this.sql).get(...this.params) || null; }
+  async run() {
+    const result = this.db.prepare(this.sql).run(...this.params);
+    return { success: true, meta: { changes: Number(result.changes) } };
+  }
+}
+
+class MemoryD1 {
+  constructor() {
+    this.db = new DatabaseSync(':memory:');
+    this.db.exec(schema);
+  }
+  prepare(sql) { return new MemoryStatement(this.db, sql); }
+  async batch(statements) {
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      const results = statements.map(statement => {
+        const sql = statement.sql.trim();
+        if (/^(SELECT|WITH|PRAGMA)\b/i.test(sql) || /\bRETURNING\b/i.test(sql)) {
+          const rows = this.db.prepare(statement.sql).all(...statement.params);
+          return { success: true, results: rows, meta: { changes: rows.length } };
+        }
+        const result = this.db.prepare(statement.sql).run(...statement.params);
+        return { success: true, meta: { changes: Number(result.changes) } };
+      });
+      this.db.exec('COMMIT');
+      return results;
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
+  }
 }
 
 let upstreamStatus = 200;
@@ -47,7 +82,12 @@ function makeRequest({ method = 'POST', clientId, ip = '203.0.113.9', origin = '
   });
 }
 
-const makeEnv = (kv, extra = {}) => ({ QUOTA_KV: kv, DEEPSEEK_API_KEY: 'sk-test', FREE_QUOTA_ENABLED: 'true', ...extra });
+const makeEnv = (_legacyKV, extra = {}) => ({
+  QUOTA_DB: new MemoryD1(),
+  DEEPSEEK_API_KEY: 'sk-test',
+  FREE_QUOTA_ENABLED: 'true',
+  ...extra,
+});
 const get = (env, clientId, ip) => onRequestGet({ request: makeRequest({ method: 'GET', clientId, ip }), env });
 const post = (env, clientId, ip, body) => onRequestPost({ request: makeRequest({ method: 'POST', clientId, ip, body }), env });
 
@@ -106,6 +146,11 @@ await ok('全局上限触发 → 503 service_busy', async () => {
   const blocked = await post(env, 'u_test_g0000003', '198.51.100.33');
   assert.equal(blocked.status, 503);
   assert.equal((await blocked.json()).error, 'service_busy');
+  const day = (await (await get(env, 'u_test_g0000003', '198.51.100.33')).json()).day;
+  const partialUserCounter = await env.QUOTA_DB.prepare(`
+    SELECT used FROM quota_counters WHERE day_key = ? AND scope = 'user' AND subject_key = ?
+  `).bind(day, 'u_test_g0000003').first();
+  assert.equal(partialUserCounter, null, '全站超限时同一 D1 batch 中的用户计数也必须回滚');
 });
 
 // 6) 上游 5xx 回退额度
@@ -135,8 +180,8 @@ await ok('非白名单 Origin → 403', async () => {
   assert.equal(res.status, 403);
 });
 
-// 9) 未绑定 KV 时降级
-await ok('未绑定 QUOTA_KV → 查询 available:false / 调用 500', async () => {
+// 9) 未绑定原子额度协调器时安全降级
+await ok('未绑定 QUOTA_DB → 查询 available:false / 调用 500', async () => {
   const env = { DEEPSEEK_API_KEY: 'sk-test', FREE_QUOTA_ENABLED: 'true' };
   const q = await get(env, 'u_test_nokv0001');
   assert.equal((await q.json()).available, false);
@@ -144,9 +189,9 @@ await ok('未绑定 QUOTA_KV → 查询 available:false / 调用 500', async () 
   assert.equal(res.status, 500);
 });
 
-// 10) 只绑定 KV、未配置项目 Key → 同样必须降级（不能误报可用）
-await ok('只绑 KV、无 DEEPSEEK_API_KEY → available:false / 调用 500', async () => {
-  const env = { QUOTA_KV: makeKV(), FREE_QUOTA_ENABLED: 'true' };
+// 10) 只绑定 D1、未配置项目 Key → 同样必须降级
+await ok('只绑 QUOTA_DB、无 DEEPSEEK_API_KEY → available:false / 调用 500', async () => {
+  const env = { QUOTA_DB: new MemoryD1(), FREE_QUOTA_ENABLED: 'true' };
   const q = await get(env, 'u_test_nokey001');
   assert.equal((await q.json()).available, false);
   const res = await post(env, 'u_test_nokey001', '198.51.100.80');
@@ -156,7 +201,7 @@ await ok('只绑 KV、无 DEEPSEEK_API_KEY → available:false / 调用 500', as
 
 // 10.1) 默认关闭：不设置 FREE_QUOTA_ENABLED 时一律不启用
 await ok('未设置 FREE_QUOTA_ENABLED → 默认关闭', async () => {
-  const env = { QUOTA_KV: makeKV(), DEEPSEEK_API_KEY: 'sk-test' };
+  const env = { QUOTA_DB: new MemoryD1(), DEEPSEEK_API_KEY: 'sk-test' };
   const qd = await (await get(env, 'u_test_default01')).json();
   assert.equal(qd.available, false);
   assert.equal(qd.error, 'feature_disabled');
@@ -201,8 +246,7 @@ await ok('上游 401/402/403 → 503 free_unavailable 且回退额度', async ()
 
 // 14) 上游网络异常 → 502 upstream_unreachable，并精确回退（含全局分片）
 await ok('上游网络异常 → 502 upstream_unreachable 且精确回退', async () => {
-  const kv = makeKV();
-  const env = makeEnv(kv);
+  const env = makeEnv(makeKV(), { FREE_GLOBAL_LIMIT: 1 });
   const clientId = 'u_test_net00001';
   const ip = '198.51.100.99';
   const original = globalThis.fetch;
@@ -212,11 +256,8 @@ await ok('上游网络异常 → 502 upstream_unreachable 且精确回退', asyn
   assert.equal(res.status, 502);
   assert.equal((await res.json()).error, 'upstream_unreachable');
   const after = await (await get(env, clientId, ip)).json();
-  assert.equal(after.remaining, 10, '网络异常应回退用户额度');
-  const globalSum = [...kv._map.entries()]
-    .filter(([key]) => key.startsWith('g:'))
-    .reduce((sum, [, value]) => sum + Number(value), 0);
-  assert.equal(globalSum, 0, '全局分片应精确回退为 0');
+  assert.equal(after.remaining, 1, '网络异常应回退额度（受 FREE_GLOBAL_LIMIT=1 限制）');
+  assert.equal((await post(env, 'u_test_net00002', '198.51.100.98')).status, 200, '全局额度也必须回退');
 });
 
 // 15) 测试码只在服务端配置后开放，兑换额度不触发模型请求
@@ -270,6 +311,186 @@ await ok('上游 4xx 失败请求会回退额度', async () => {
   upstreamStatus = 200;
   const after = await (await get(env, clientId, ip)).json();
   assert.equal(after.remaining, 10);
+});
+
+// 18) 上游 HTTP 200 但 JSON 正文无可用回答：回退用户/IP/全站额度
+await ok('上游 200 空回答 → 502 empty_upstream_response 且额度全额回退', async () => {
+  const env = makeEnv(makeKV(), { FREE_GLOBAL_LIMIT: 1 });
+  const clientId = 'u_test_emptyjson01';
+  const ip = '198.51.100.104';
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({
+    choices: [{ message: { content: '   ' } }],
+    usage: { prompt_tokens: 20, completion_tokens: 0, total_tokens: 20 },
+  }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  try {
+    const failed = await post(env, clientId, ip, { ...BODY, stream: false });
+    assert.equal(failed.status, 502);
+    assert.deepEqual(await failed.json(), { error: 'empty_upstream_response', quotaRefunded: true });
+    assert.equal((await (await get(env, clientId, ip)).json()).remaining, 1);
+    globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: 'ok' } }] }), {
+      status: 200, headers: { 'Content-Type': 'application/json' },
+    });
+    assert.equal((await post(env, 'u_test_emptyjson02', '198.51.100.108')).status, 200, '空回答必须归还全站额度');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+await ok('上游 200 非 JSON 正文 → invalid_upstream_response 且额度回退', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_invalidjson1';
+  const ip = '198.51.100.105';
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response('<html>empty</html>', {
+    status: 200, headers: { 'Content-Type': 'application/json' },
+  });
+  try {
+    const failed = await post(env, clientId, ip, { ...BODY, stream: false });
+    assert.equal(failed.status, 502);
+    assert.equal((await failed.json()).error, 'invalid_upstream_response');
+    assert.equal((await (await get(env, clientId, ip)).json()).remaining, 10);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+await ok('上游 SSE 无回答 → 流读取结束后回退额度', async () => {
+  const env = makeEnv(makeKV(), { FREE_GLOBAL_LIMIT: 1 });
+  const clientId = 'u_test_emptysse001';
+  const ip = '198.51.100.106';
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response('data: [DONE]\n\n', {
+    status: 200, headers: { 'Content-Type': 'text/event-stream' },
+  });
+  try {
+    const response = await post(env, clientId, ip, { ...BODY, stream: true });
+    assert.equal(response.status, 200);
+    assert.equal(await response.text(), 'data: [DONE]\n\n');
+    assert.equal((await (await get(env, clientId, ip)).json()).remaining, 1);
+    globalThis.fetch = async () => new Response('data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n', {
+      status: 200, headers: { 'Content-Type': 'text/event-stream' },
+    });
+    assert.equal((await post(env, 'u_test_emptysse002', '198.51.100.109')).status, 200, '空 SSE 必须归还全站额度');
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+await ok('上游 SSE 有回答 → 保留扣额并原样转发', async () => {
+  const env = makeEnv(makeKV());
+  const clientId = 'u_test_valid_sse01';
+  const ip = '198.51.100.107';
+  const original = globalThis.fetch;
+  const body = 'data: {"choices":[{"delta":{"content":"ok"}}]}\n\ndata: [DONE]\n\n';
+  globalThis.fetch = async () => new Response(body, {
+    status: 200, headers: { 'Content-Type': 'text/event-stream' },
+  });
+  try {
+    const response = await post(env, clientId, ip, { ...BODY, stream: true });
+    assert.equal(await response.text(), body);
+    assert.equal((await (await get(env, clientId, ip)).json()).remaining, 9);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+await ok('D1 退款事务故障时不会谎报已退额度', async () => {
+  const baseDb = new MemoryD1();
+  const failingDb = {
+    prepare: sql => baseDb.prepare(sql),
+    batch: statements => {
+      if (statements.some(statement => statement.sql.includes('SET settlement_token = ?'))) {
+        throw new Error('simulated D1 settlement failure');
+      }
+      return baseDb.batch(statements);
+    },
+  };
+  const env = makeEnv(makeKV(), {
+    FREE_GLOBAL_LIMIT: 1,
+    QUOTA_DB: failingDb,
+  });
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => new Response(JSON.stringify({ choices: [{ message: { content: '' } }] }), {
+    status: 200, headers: { 'Content-Type': 'application/json' },
+  });
+  try {
+    const response = await post(env, 'u_test_refundcoord01', '198.51.100.151', { ...BODY, stream: false });
+    const error = await response.json();
+    assert.equal(response.status, 503);
+    assert.equal(error.error, 'quota_settlement_failed');
+    assert.equal(error.quotaRefunded, false);
+    assert.equal((await (await get(env, 'u_test_refundcoord01', '198.51.100.151')).json()).remaining, 0);
+  } finally {
+    globalThis.fetch = original;
+  }
+});
+
+await ok('SSE 回答已到达但提交扣额失败时会尝试退款', async () => {
+  const baseDb = new MemoryD1();
+  const failingDb = {
+    prepare: sql => baseDb.prepare(sql),
+    batch: statements => baseDb.batch(statements),
+  };
+  const originalRun = baseDb.prepare.bind(baseDb);
+  failingDb.prepare = sql => {
+    if (sql.includes("SET state = 'committed'")) {
+      return { bind: () => ({ run: async () => { throw new Error('simulated D1 commit failure'); } }) };
+    }
+    return originalRun(sql);
+  };
+  const env = makeEnv(makeKV(), { QUOTA_DB: failingDb });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async () => new Response('data: {"choices":[{"delta":{"content":"ok"}}]}\n\n', {
+    status: 200, headers: { 'Content-Type': 'text/event-stream' },
+  });
+  try {
+    const response = await post(env, 'u_test_ssecommit01', '198.51.100.152');
+    await assert.rejects(response.text());
+    assert.equal((await (await get(env, 'u_test_ssecommit01', '198.51.100.152')).json()).remaining, 10);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+await ok('并发同用户请求 → 原子限制不会超发用户额度', async () => {
+  const env = makeEnv(makeKV(), { FREE_USER_LIMIT: 3, FREE_IP_LIMIT: 100, FREE_GLOBAL_LIMIT: 100 });
+  const responses = await Promise.all(Array.from({ length: 20 }, (_, index) =>
+    post(env, 'u_test_race_user01', `198.51.100.${120 + index}`)));
+  assert.equal(responses.filter(response => response.status === 200).length, 3);
+  assert.equal(responses.filter(response => response.status === 429).length, 17);
+  assert.equal((await (await get(env, 'u_test_race_user01', '198.51.100.120')).json()).remaining, 0);
+});
+
+await ok('多用户同 IP 并发 → 原子限制不会超发 IP 额度', async () => {
+  const env = makeEnv(makeKV(), { FREE_USER_LIMIT: 100, FREE_IP_LIMIT: 3, FREE_GLOBAL_LIMIT: 100 });
+  const responses = await Promise.all(Array.from({ length: 20 }, (_, index) =>
+    post(env, `u_test_race_ip${String(index).padStart(4, '0')}`, '198.51.100.150')));
+  assert.equal(responses.filter(response => response.status === 200).length, 3);
+  assert.equal(responses.filter(response => response.status === 429).length, 17);
+  assert.equal((await (await get(env, 'u_test_race_ip_final', '198.51.100.150')).json()).remaining, 0);
+});
+
+await ok('多用户全站并发 → 原子全局上限不会超发', async () => {
+  const env = makeEnv(makeKV(), { FREE_USER_LIMIT: 100, FREE_IP_LIMIT: 100, FREE_GLOBAL_LIMIT: 3 });
+  const responses = await Promise.all(Array.from({ length: 20 }, (_, index) =>
+    post(env, `u_test_race_g${String(index).padStart(4, '0')}`, `198.51.100.${160 + index}`)));
+  assert.equal(responses.filter(response => response.status === 200).length, 3);
+  assert.equal(responses.filter(response => response.status === 503).length, 17);
+});
+
+await ok('并发重复退款只生效一次（reservation 幂等）', async () => {
+  const env = makeEnv(makeKV());
+  const day = new Date(Date.now() + 8 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const reserved = await reserveQuota(env, day, {
+    reservationId: 'idempotent-test-reservation', clientId: 'u_test_idempotent', ipHash: 'ip-idempotent',
+  });
+  assert.equal(reserved.status, 200);
+  const refunds = await Promise.all(Array.from({ length: 10 }, () =>
+    settleQuota(env, day, 'idempotent-test-reservation', 'refund')));
+  assert.ok(refunds.every(result => result.state === 'refunded'));
+  const status = await get(env, 'u_test_idempotent', 'ip-idempotent');
+  assert.equal((await status.json()).remaining, 10);
 });
 
 console.log(results.join('\n'));

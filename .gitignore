@@ -1,2 +1,7 @@
 # 本地 IDE 配置
 .idea/
+
+# Cloudflare Pages / Wrangler 本地状态与个人配置
+.wrangler/
+wrangler.local.toml
+.dev.vars

@@ -6,11 +6,11 @@
  *   POST  转发 Chat Completions，并对免费额度计数（user / ip / global）
  *
  * 设计目标：项目方 Key 只存在于服务端；用户未配置自己的 Key 时走本代理。
- * 额度：user 10/天、ip 10/天、global 300/天，按 UTC+8 自然日重置（日键 + TTL 自动过期，无需定时任务）。
+ * 额度：user 10/天、ip 10/天、global 300/天；由 Pages Function 直接调用 D1 事务协调。
  *
  * 需要的环境变量 / 绑定：
  *   DEEPSEEK_API_KEY   必需（Secret）
- *   QUOTA_KV           必需（KV 命名空间绑定）
+ *   QUOTA_DB           必需（Pages 的 D1 Database binding）
  *   FREE_QUOTA_ENABLED 可选，默认关闭；设为 true/1/on/yes 才启用免费额度
  *   IP_SALT            可选（Secret，用于对 IP 做 HMAC 哈希；不配置则退化为明文前缀）
  *   FREE_USER_LIMIT    可选，默认 10
@@ -25,13 +25,8 @@
  */
 
 const TZ_OFFSET_HOURS = 8;            // UTC+8
-const TTL_SECONDS = 60 * 60 * 48;     // 48 小时覆盖跨天
-const GLOBAL_SHARDS = 4;              // 全局计数分片，降低单 key 写频率
 const MAX_OUTPUT_TOKENS = 2000;       // 免费额度的输出上限
 const MAX_MESSAGES = 12;              // 免费额度的消息条数上限
-const TEST_QUOTA_GRANT = 10;           // 测试兑换码每次增加 10 次
-const TEST_QUOTA_MAX_REDEEMS = 20;     // 每身份 / IP 每日最多兑换 20 次
-const TEST_QUOTA_MAX_FAILED_CODES = 8;
 const DEFAULT_ORIGINS = ['https://x6ren.cn', 'https://www.x6ren.cn'];
 const DEFAULT_MODELS = ['deepseek-flash', 'deepseek-v4-pro', 'deepseek-chat', 'deepseek-reasoner'];
 
@@ -92,28 +87,109 @@ async function hashIp(ip, salt) {
   return [...new Uint8Array(sig)].slice(0, 12).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
-async function readCounter(env, key) {
-  return Number(await env.QUOTA_KV.get(key)) || 0;
+const COUNTER_INCREMENT_SQL = `
+  INSERT INTO quota_counters (day_key, scope, subject_key, used, bonus, base_limit, updated_at)
+  VALUES (?, ?, ?, 1, 0, ?, ?)
+  ON CONFLICT (day_key, scope, subject_key) DO UPDATE SET
+    used = quota_counters.used + 1,
+    base_limit = excluded.base_limit,
+    updated_at = excluded.updated_at
+`;
+
+const COUNTER_BONUS_SQL = `
+  INSERT INTO quota_counters (day_key, scope, subject_key, used, bonus, base_limit, updated_at)
+  VALUES (?, ?, ?, 0, 10, ?, ?)
+  ON CONFLICT (day_key, scope, subject_key) DO UPDATE SET
+    bonus = quota_counters.bonus + 10,
+    base_limit = excluded.base_limit,
+    updated_at = excluded.updated_at
+`;
+
+const COUNTER_SELECT_SQL = `
+  SELECT scope, subject_key, used, bonus
+  FROM quota_counters
+  WHERE day_key = ? AND (
+    (scope = 'user' AND subject_key = ?) OR
+    (scope = 'ip' AND subject_key = ?) OR
+    (scope = 'global' AND subject_key = 'all') OR
+    (scope = 'failed_ip' AND subject_key = ?)
+  )
+`;
+
+function quotaStateFromRows(env, clientId, ipHash, rows) {
+  const base = limits(env);
+  const counters = new Map((rows || []).map(row => [`${row.scope}:${row.subject_key}`, row]));
+  const user = counters.get(`user:${clientId}`);
+  const ip = counters.get(`ip:${ipHash}`);
+  const global = counters.get('global:all');
+  const userLimit = base.user + (Number(user?.bonus) || 0);
+  const ipLimit = base.ip + (Number(ip?.bonus) || 0);
+  return {
+    userLimit,
+    ipLimit,
+    remaining: Math.max(0, Math.min(
+      userLimit - (Number(user?.used) || 0),
+      ipLimit - (Number(ip?.used) || 0),
+      base.global - (Number(global?.used) || 0),
+    )),
+  };
 }
 
-async function increment(env, key, limit) {
-  const current = await readCounter(env, key);
-  if (current >= limit) return { ok: false, used: current };
-  await env.QUOTA_KV.put(key, String(current + 1), { expirationTtl: TTL_SECONDS });
-  return { ok: true, used: current + 1 };
+let lastCleanupDay = '';
+let cleanupTask = null;
+
+function database(env) {
+  if (!env.QUOTA_DB) throw new Error('quota_database_unavailable');
+  return env.QUOTA_DB;
 }
 
-async function decrement(env, key) {
+function counterIncrement(db, day, scope, subject, limit) {
+  return db.prepare(COUNTER_INCREMENT_SQL).bind(day, scope, subject, limit, Date.now());
+}
+
+function counterBonus(db, day, scope, subject, limit) {
+  return db.prepare(COUNTER_BONUS_SQL).bind(day, scope, subject, limit, Date.now());
+}
+
+function dayBefore(day, days) {
+  const [year, month, date] = day.split('-').map(Number);
+  return new Date(Date.UTC(year, month - 1, date - days)).toISOString().slice(0, 10);
+}
+
+async function cleanupOldQuotaData(env, day) {
+  if (lastCleanupDay === day) return;
+  if (cleanupTask) {
+    // A failed best-effort cleanup must not turn concurrent quota checks into 500s.
+    try { await cleanupTask; } catch (_) { /* Ignore retention cleanup errors. */ }
+    if (lastCleanupDay === day) return;
+  }
+  cleanupTask = (async () => {
+    const db = database(env);
+    const meta = await db.prepare(
+      'SELECT last_cleanup_day FROM quota_maintenance WHERE maintenance_key = ?'
+    ).bind('retention').first();
+    if (meta?.last_cleanup_day === day) {
+      lastCleanupDay = day;
+      return;
+    }
+    const cutoff = dayBefore(day, 45);
+    await db.batch([
+      db.prepare('DELETE FROM quota_reservations WHERE day_key < ?').bind(cutoff),
+      db.prepare('DELETE FROM quota_counters WHERE day_key < ?').bind(cutoff),
+      db.prepare(`
+        INSERT INTO quota_maintenance (maintenance_key, last_cleanup_day) VALUES (?, ?)
+        ON CONFLICT (maintenance_key) DO UPDATE SET last_cleanup_day = excluded.last_cleanup_day
+      `).bind('retention', day),
+    ]);
+    lastCleanupDay = day;
+  })();
   try {
-    const current = await readCounter(env, key);
-    if (current > 0) await env.QUOTA_KV.put(key, String(current - 1), { expirationTtl: TTL_SECONDS });
-  } catch (_) { /* 回退失败不影响主流程 */ }
-}
-
-async function addCounter(env, key, amount) {
-  const next = (await readCounter(env, key)) + amount;
-  await env.QUOTA_KV.put(key, String(next), { expirationTtl: TTL_SECONDS });
-  return next;
+    await cleanupTask;
+  } catch (_) {
+    // Retention cleanup is best-effort and must not take quota checks offline.
+  } finally {
+    cleanupTask = null;
+  }
 }
 
 async function matchesSecretCode(input, expected) {
@@ -129,76 +205,174 @@ async function matchesSecretCode(input, expected) {
   return mismatch === 0;
 }
 
-async function quotaState(env, clientId, ipHash, day) {
+export async function quotaState(env, clientId, ipHash, day) {
+  await cleanupOldQuotaData(env, day);
+  const result = await database(env).prepare(COUNTER_SELECT_SQL)
+    .bind(day, clientId, ipHash, ipHash).all();
+  return quotaStateFromRows(env, clientId, ipHash, result.results);
+}
+
+export async function reserveQuota(env, day, { reservationId, clientId, ipHash }) {
   const base = limits(env);
-  const [userUsed, ipUsed, userBonus, ipBonus] = await Promise.all([
-    readCounter(env, `u:${clientId}:${day}`),
-    readCounter(env, `ip:${ipHash}:${day}`),
-    readCounter(env, `bonus:u:${clientId}:${day}`),
-    readCounter(env, `bonus:ip:${ipHash}:${day}`),
-  ]);
-  const userLimit = base.user + userBonus;
-  const ipLimit = base.ip + ipBonus;
-  return {
-    userUsed, ipUsed, userLimit, ipLimit,
-    remaining: Math.max(0, Math.min(userLimit - userUsed, ipLimit - ipUsed)),
-  };
+  const db = database(env);
+  await cleanupOldQuotaData(env, day);
+  try {
+    const result = await db.batch([
+      counterIncrement(db, day, 'user', clientId, base.user),
+      counterIncrement(db, day, 'ip', ipHash, base.ip),
+      counterIncrement(db, day, 'global', 'all', base.global),
+      db.prepare(`
+        INSERT INTO quota_reservations
+          (reservation_id, day_key, client_key, ip_key, state, created_at)
+        VALUES (?, ?, ?, ?, 'pending', ?)
+      `).bind(reservationId, day, clientId, ipHash, Date.now()),
+      db.prepare(COUNTER_SELECT_SQL).bind(day, clientId, ipHash, ipHash),
+    ]);
+    const state = quotaStateFromRows(env, clientId, ipHash, result[4]?.results);
+    return { status: 200, body: { remaining: state.remaining, limit: state.userLimit } };
+  } catch (error) {
+    const message = String(error?.message || error);
+    if (message.includes('quota_user_limit')) {
+      const state = await quotaState(env, clientId, ipHash, day).catch(() => null);
+      return { status: 429, body: { error: 'daily_limit', scope: 'user', limit: state?.userLimit ?? base.user } };
+    }
+    if (message.includes('quota_ip_limit')) {
+      const state = await quotaState(env, clientId, ipHash, day).catch(() => null);
+      return { status: 429, body: { error: 'daily_limit', scope: 'ip', limit: state?.ipLimit ?? base.ip } };
+    }
+    if (message.includes('quota_global_limit')) return { status: 503, body: { error: 'service_busy' } };
+    throw error;
+  }
+}
+
+async function incrementSpecialCounter(env, day, scope, subject, limit) {
+  const db = database(env);
+  await db.batch([counterIncrement(db, day, scope, subject, limit)]);
 }
 
 async function redeemTestQuota(env, { clientId, ipHash, day, code }) {
   const expected = String(env.TEST_QUOTA_CODE || '').trim();
   if (!expected) return json({ error: 'test_quota_unavailable' }, 503);
-
-  const failedKey = `test:failed:${ipHash}:${day}`;
-  const failed = await readCounter(env, failedKey);
-  if (failed >= TEST_QUOTA_MAX_FAILED_CODES) return json({ error: 'test_code_locked' }, 429);
-
   const provided = String(code || '').trim();
-  if (provided.length < 8 || provided.length > 128 || !(await matchesSecretCode(provided, expected))) {
-    await increment(env, failedKey, TEST_QUOTA_MAX_FAILED_CODES);
+  const validCode = provided.length >= 8 && provided.length <= 128
+    && await matchesSecretCode(provided, expected);
+  const base = limits(env);
+  const db = database(env);
+  let failedRow;
+  try {
+    failedRow = await db.prepare(`
+      SELECT used FROM quota_counters WHERE day_key = ? AND scope = 'failed_ip' AND subject_key = ?
+    `).bind(day, ipHash).first();
+  } catch (_) {
+    return json({ error: 'quota_database_unavailable' }, 503);
+  }
+  if ((Number(failedRow?.used) || 0) >= 8) return json({ error: 'test_code_locked' }, 429);
+
+  if (!validCode) {
+    try {
+      await incrementSpecialCounter(env, day, 'failed_ip', ipHash, 8);
+    } catch (error) {
+      if (String(error?.message || error).includes('test_code_locked')) {
+        return json({ error: 'test_code_locked' }, 429);
+      }
+      return json({ error: 'quota_database_unavailable' }, 503);
+    }
     return json({ error: 'invalid_test_quota_code' }, 400);
   }
 
-  const userRedeemsKey = `test:redeems:u:${clientId}:${day}`;
-  const ipRedeemsKey = `test:redeems:ip:${ipHash}:${day}`;
-  const userRedeem = await increment(env, userRedeemsKey, TEST_QUOTA_MAX_REDEEMS);
-  if (!userRedeem.ok) return json({ error: 'test_quota_daily_limit' }, 429);
-  const ipRedeem = await increment(env, ipRedeemsKey, TEST_QUOTA_MAX_REDEEMS);
-  if (!ipRedeem.ok) {
-    await decrement(env, userRedeemsKey);
-    return json({ error: 'test_quota_daily_limit' }, 429);
+  try {
+    const result = await db.batch([
+      counterIncrement(db, day, 'redeem_user', clientId, 20),
+      counterIncrement(db, day, 'redeem_ip', ipHash, 20),
+      counterBonus(db, day, 'user', clientId, base.user),
+      counterBonus(db, day, 'ip', ipHash, base.ip),
+      db.prepare(COUNTER_SELECT_SQL).bind(day, clientId, ipHash, ipHash),
+    ]);
+    const state = quotaStateFromRows(env, clientId, ipHash, result[4]?.results);
+    return json({
+      ok: true,
+      granted: 10,
+      limit: state.userLimit,
+      remaining: state.remaining,
+      testQuotaEnabled: true,
+    });
+  } catch (error) {
+    if (String(error?.message || error).includes('test_quota_daily_limit')) {
+      return json({ error: 'test_quota_daily_limit' }, 429);
+    }
+    return json({ error: 'quota_database_unavailable' }, 503);
+  }
+}
+
+export async function settleQuota(env, day, reservationId, outcome) {
+  const db = database(env);
+  const reservation = await db.prepare(`
+    SELECT day_key, client_key, ip_key, state
+    FROM quota_reservations WHERE reservation_id = ?
+  `).bind(reservationId).first();
+  if (!reservation) return { settled: false, state: 'missing' };
+  if (reservation.state !== 'pending') return { settled: false, state: reservation.state };
+
+  if (outcome === 'commit') {
+    await db.prepare(`
+      UPDATE quota_reservations SET state = 'committed'
+      WHERE reservation_id = ? AND state = 'pending' AND settlement_token IS NULL
+    `).bind(reservationId).run();
+  } else if (outcome === 'refund') {
+    const token = crypto.randomUUID();
+    await db.batch([
+      db.prepare(`
+        UPDATE quota_reservations SET settlement_token = ?
+        WHERE reservation_id = ? AND state = 'pending' AND settlement_token IS NULL
+      `).bind(token, reservationId),
+      db.prepare(`
+        UPDATE quota_counters SET used = MAX(0, used - 1), updated_at = ?
+        WHERE day_key = ? AND scope = 'user' AND subject_key = ?
+          AND EXISTS (SELECT 1 FROM quota_reservations WHERE reservation_id = ? AND state = 'pending' AND settlement_token = ?)
+      `).bind(Date.now(), reservation.day_key, reservation.client_key, reservationId, token),
+      db.prepare(`
+        UPDATE quota_counters SET used = MAX(0, used - 1), updated_at = ?
+        WHERE day_key = ? AND scope = 'ip' AND subject_key = ?
+          AND EXISTS (SELECT 1 FROM quota_reservations WHERE reservation_id = ? AND state = 'pending' AND settlement_token = ?)
+      `).bind(Date.now(), reservation.day_key, reservation.ip_key, reservationId, token),
+      db.prepare(`
+        UPDATE quota_counters SET used = MAX(0, used - 1), updated_at = ?
+        WHERE day_key = ? AND scope = 'global' AND subject_key = 'all'
+          AND EXISTS (SELECT 1 FROM quota_reservations WHERE reservation_id = ? AND state = 'pending' AND settlement_token = ?)
+      `).bind(Date.now(), reservation.day_key, reservationId, token),
+      db.prepare(`
+        UPDATE quota_reservations SET state = 'refunded', settlement_token = NULL
+        WHERE reservation_id = ? AND state = 'pending' AND settlement_token = ?
+      `).bind(reservationId, token),
+    ]);
+  } else {
+    throw new Error('invalid_quota_outcome');
   }
 
-  await Promise.all([
-    addCounter(env, `bonus:u:${clientId}:${day}`, TEST_QUOTA_GRANT),
-    addCounter(env, `bonus:ip:${ipHash}:${day}`, TEST_QUOTA_GRANT),
-  ]);
-  const quota = await quotaState(env, clientId, ipHash, day);
-  return json({
-    ok: true,
-    granted: TEST_QUOTA_GRANT,
-    limit: quota.userLimit,
-    remaining: quota.remaining,
-    testQuotaEnabled: true,
-  });
+  const settled = await db.prepare('SELECT state FROM quota_reservations WHERE reservation_id = ?')
+    .bind(reservationId).first();
+  return {
+    settled: settled?.state === (outcome === 'commit' ? 'committed' : 'refunded'),
+    state: settled?.state || 'missing',
+  };
 }
 
-/** 全局计数：分片求和后再随机写一个分片，避免单热 key。返回实际使用的分片以便精确回退。 */
-async function incrementGlobal(env, day, limit) {
-  const keys = Array.from({ length: GLOBAL_SHARDS }, (_, i) => `g:${day}:${i}`);
-  const values = await Promise.all(keys.map(key => readCounter(env, key)));
-  const total = values.reduce((sum, n) => sum + n, 0);
-  if (total >= limit) return { ok: false, total };
-  const shard = Math.floor(Math.random() * GLOBAL_SHARDS);
-  await increment(env, keys[shard], limit);
-  return { ok: true, total: total + 1, shard };
+async function refundQuota(env, day, reservationId) {
+  try {
+    const result = await settleQuota(env, day, reservationId, 'refund');
+    return result.state === 'refunded';
+  } catch (_) {
+    return false;
+  }
 }
 
-async function refund(env, { userKey, ipKey, day, shard }) {
-  const targets = [decrement(env, userKey), decrement(env, ipKey)];
-  // 只回退真正自增过的那个分片，避免全局计数在失败时只增不减。
-  if (Number.isInteger(shard)) targets.push(decrement(env, `g:${day}:${shard}`));
-  await Promise.allSettled(targets);
+function refundUnconfirmed(error) {
+  return json({ error: 'quota_settlement_failed', upstreamError: error, quotaRefunded: false }, 503);
+}
+
+async function failedUpstreamResponse(env, day, reservationId, error, status = 502) {
+  if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed(error);
+  return json({ error, quotaRefunded: true }, status);
 }
 
 function originAllowed(request, env) {
@@ -216,7 +390,99 @@ function allowedModels(env) {
   return list.length ? list : DEFAULT_MODELS;
 }
 
-const missingConfig = (env) => !env.QUOTA_KV || !env.DEEPSEEK_API_KEY;
+function hasUsableText(value) {
+  if (typeof value === 'string') return value.trim().length > 0;
+  if (!Array.isArray(value)) return false;
+  return value.some(part => typeof part === 'string'
+    ? part.trim().length > 0
+    : part && part.type === 'text' && typeof part.text === 'string' && part.text.trim().length > 0);
+}
+
+function hasCompletionText(payload) {
+  const choice = payload?.choices?.[0] || {};
+  const content = choice?.message?.content
+    || choice?.text
+    || payload?.data?.content
+    || payload?.content
+    || (typeof payload === 'string' ? payload : '');
+  return hasUsableText(content);
+}
+
+function sseLineHasCompletionText(line) {
+  const value = String(line || '').trim();
+  if (!value.startsWith('data:')) return false;
+  const data = value.slice(5).trim();
+  if (!data || data === '[DONE]') return false;
+  try {
+    const payload = JSON.parse(data);
+    const choices = Array.isArray(payload?.choices) ? payload.choices : [];
+    if (choices.some(choice => hasUsableText(
+      choice?.delta?.content ?? choice?.message?.content ?? choice?.text,
+    ))) return true;
+    return hasUsableText(payload?.data?.content ?? payload?.content);
+  } catch (_) {
+    return false;
+  }
+}
+
+/** 转发 SSE 时观察可见回答；若请求结束/中断前始终无回答，则回退预占额度。 */
+function createQuotaAwareStream(body, env, day, reservationId) {
+  const reader = body.getReader();
+  const decoder = new TextDecoder();
+  let pendingLine = '';
+  let hasAnswer = false;
+  let settled = false;
+
+  const settleOnce = async (outcome) => {
+    if (settled) return;
+    await settleQuota(env, day, reservationId, outcome);
+    settled = true;
+  };
+
+  const inspect = async (chunk, stream = true) => {
+    pendingLine += decoder.decode(chunk, { stream });
+    const lines = pendingLine.split(/\r?\n/);
+    pendingLine = lines.pop() || '';
+    for (const line of lines) {
+      if (!hasAnswer && sseLineHasCompletionText(line)) {
+        await settleOnce('commit');
+        hasAnswer = true;
+      }
+    }
+  };
+
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        const { value, done } = await reader.read();
+        if (done) {
+          await inspect();
+          if (!hasAnswer && pendingLine && sseLineHasCompletionText(pendingLine)) {
+            await settleOnce('commit');
+            hasAnswer = true;
+          }
+          if (!hasAnswer) await settleOnce('refund');
+          reader.releaseLock();
+          controller.close();
+          return;
+        }
+        await inspect(value);
+        controller.enqueue(value);
+      } catch (error) {
+        if (!hasAnswer) await settleOnce('refund').catch(() => {});
+        try { reader.releaseLock(); } catch (_) { /* 读取失败时尽力释放 */ }
+        controller.error(error);
+      }
+    },
+    async cancel(reason) {
+      try { await reader.cancel(reason); } catch (_) { /* 忽略上游取消错误 */ }
+      if (!hasAnswer) await settleOnce('refund').catch(() => {});
+      try { reader.releaseLock(); } catch (_) { /* 忽略释放错误 */ }
+    },
+  });
+}
+
+const missingConfig = (env) => !env.QUOTA_DB || !env.DEEPSEEK_API_KEY;
 
 /** 功能开关：默认关闭；只有显式设为 true/1/on/yes 才启用。 */
 function featureEnabled(env) {
@@ -226,7 +492,7 @@ function featureEnabled(env) {
 
 /** GET：返回当前身份今日剩余额度，不计数 */
 export async function onRequestGet({ request, env }) {
-  // 免费额度只有在「开关开启 + KV 已绑定 + 项目 Key 已配置」时才可用；
+  // 免费额度只有在「开关开启 + D1 已绑定 + 项目 Key 已配置」时才可用；
   // 否则必须返回 available:false，避免前端误以为可用。
   if (!featureEnabled(env)) return json({ available: false, error: 'feature_disabled' });
   if (missingConfig(env)) return json({ available: false, error: 'server_not_configured' });
@@ -235,7 +501,12 @@ export async function onRequestGet({ request, env }) {
   const day = dayKey();
   const ip = normalizeIp(request.headers.get('CF-Connecting-IP'));
   const ipHash = await hashIp(ip, env.IP_SALT);
-  const quota = await quotaState(env, clientId, ipHash, day);
+  let quota;
+  try {
+    quota = await quotaState(env, clientId, ipHash, day);
+  } catch (_) {
+    return json({ available: false, error: 'quota_database_unavailable' }, 503);
+  }
   return json({
     available: true,
     day,
@@ -281,25 +552,18 @@ export async function onRequestPost({ request, env }) {
   const model = String(body.model || '');
   if (!allowedModels(env).includes(model)) return json({ error: 'model_not_allowed' }, 400);
 
-  const limit = limits(env);
-  const userKey = `u:${clientId}:${day}`;
-  const ipKey = `ip:${ipHash}:${day}`;
-  const currentQuota = await quotaState(env, clientId, ipHash, day);
-
-  const userRes = await increment(env, userKey, currentQuota.userLimit);
-  if (!userRes.ok) return json({ error: 'daily_limit', scope: 'user', limit: currentQuota.userLimit, day }, 429);
-
-  const ipRes = await increment(env, ipKey, currentQuota.ipLimit);
-  if (!ipRes.ok) {
-    await refund(env, { userKey, ipKey, day });
-    return json({ error: 'daily_limit', scope: 'ip', limit: currentQuota.ipLimit, day }, 429);
+  const reservationId = crypto.randomUUID();
+  let reservation;
+  try {
+    reservation = await reserveQuota(env, day, {
+      reservationId,
+      clientId,
+      ipHash,
+    });
+  } catch (_) {
+    return json({ error: 'quota_database_unavailable' }, 503);
   }
-
-  const globalRes = await incrementGlobal(env, day, limit.global);
-  if (!globalRes.ok) {
-    await refund(env, { userKey, ipKey, day });
-    return json({ error: 'service_busy', day }, 503);
-  }
+  if (reservation.status !== 200) return json({ ...reservation.body, day }, reservation.status);
 
   const payload = {
     model,
@@ -325,15 +589,15 @@ export async function onRequestPost({ request, env }) {
         Authorization: `Bearer ${env.DEEPSEEK_API_KEY}`,
       },
       body: JSON.stringify(payload),
+      signal: request.signal,
     });
   } catch (_) {
-    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
-    return json({ error: 'upstream_unreachable' }, 502);
+    return failedUpstreamResponse(env, day, reservationId, 'upstream_unreachable');
   }
 
   // 网络/服务端/上游限流：不扣用户次数
   if (upstream.status === 429 || upstream.status >= 500) {
-    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
+    if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed('upstream_error');
     return new Response(upstream.body, {
       status: upstream.status,
       headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' },
@@ -341,12 +605,12 @@ export async function onRequestPost({ request, env }) {
   }
   // 项目方 Key 失效或余额不足：回退额度，并让前端降级为「填写自己的 Key」
   if (upstream.status === 401 || upstream.status === 402 || upstream.status === 403) {
-    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
+    if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed('free_unavailable');
     return json({ error: 'free_unavailable', upstreamStatus: upstream.status }, 503);
   }
   if (!upstream.ok) {
     // 任意失败响应均不应消耗用户免费次数；否则参数类 4xx 会产生“失败也扣额”的错觉。
-    await refund(env, { userKey, ipKey, day, shard: globalRes.shard });
+    if (!await refundQuota(env, day, reservationId)) return refundUnconfirmed('upstream_error');
     const text = await upstream.text().catch(() => '');
     return new Response(text || JSON.stringify({ error: 'upstream_error' }), {
       status: upstream.status,
@@ -354,13 +618,46 @@ export async function onRequestPost({ request, env }) {
     });
   }
 
-  return new Response(upstream.body, {
+  const contentType = upstream.headers.get('Content-Type') || 'application/json; charset=utf-8';
+  const isSse = payload.stream && !contentType.toLowerCase().includes('application/json');
+  let responseBody;
+
+  if (isSse) {
+    if (!upstream.body) {
+      return failedUpstreamResponse(env, day, reservationId, 'empty_upstream_response');
+    }
+    responseBody = createQuotaAwareStream(upstream.body, env, day, reservationId);
+  } else {
+    let text;
+    try {
+      text = await upstream.text();
+    } catch (_) {
+      return failedUpstreamResponse(env, day, reservationId, 'upstream_read_failed');
+    }
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch (_) {
+      return failedUpstreamResponse(env, day, reservationId, 'invalid_upstream_response');
+    }
+    if (!hasCompletionText(parsed)) {
+      return failedUpstreamResponse(env, day, reservationId, 'empty_upstream_response');
+    }
+    try {
+      await settleQuota(env, day, reservationId, 'commit');
+    } catch (_) {
+      return refundUnconfirmed('quota_commit_failed');
+    }
+    responseBody = text;
+  }
+
+  return new Response(responseBody, {
     status: 200,
     headers: {
-      'Content-Type': upstream.headers.get('Content-Type') || 'text/event-stream; charset=utf-8',
+      'Content-Type': contentType,
       'Cache-Control': 'no-store',
-      'X-Quota-Remaining': String(Math.max(0, Math.min(currentQuota.userLimit - userRes.used, currentQuota.ipLimit - ipRes.used))),
-      'X-Quota-Limit': String(currentQuota.userLimit),
+      'X-Quota-Remaining': String(reservation.body.remaining),
+      'X-Quota-Limit': String(reservation.body.limit),
     },
   });
 }
