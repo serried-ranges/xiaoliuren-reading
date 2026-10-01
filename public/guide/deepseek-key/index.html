@@ -21,40 +21,39 @@
 </head>
 <body>
   <main class="page-wrap">
-    <nav class="site-nav" aria-label="资料站导航">
+    <nav class="site-nav site-nav--three" aria-label="资料站导航">
       <a class="site-nav__primary" href="../../index.html">排盘应用</a>
       <a href="../../manual/index.html">阅读手册</a>
-      <a href="../../privacy/index.html">隐私边界</a>
       <a href="../../changelog/index.html">更新记录</a>
     </nav>
     <article class="page-card">
 <p class="eyebrow">JI HENG · GUIDE</p>
       <h1>获取 DeepSeek API Key</h1>
-      <p class="lead">「一键解卦」可以自备 API Key；站点免费额度开启时，也可以不填 Key 直接体验。本页按顺序说明注册账号、实名认证、充值额度与创建 Key 的步骤，最后回到应用填写。</p>
-      <p class="meta">适用版本：V3.0.0 · 校对：2026-09-22</p>
+      <p class="lead">想用自己的接口解读，可以在 DeepSeek 开放平台创建 API Key，再回到玑衡填写。本页介绍账号准备、额度检查、Key 创建与保存。</p>
+      <p class="meta">内容校对：2026-10-01 · 图示仅供参考，操作以官网当前页面为准。</p>
 
-      <p class="note"><strong>先说结论：</strong>不填写 Key 也能正常使用排盘、历史记录和 AI 提示词；「一键解卦」可自备 Key，也可在站点免费额度开启且未用完时直接使用项目额度。本页只是操作参考，具体界面与要求以 DeepSeek 官网当前页面为准。</p>
+      <p class="note"><strong>是否需要 Key：</strong>排盘、记录、主题和 AI 提示词生成与复制不需要 Key。未填写 Key 时，只有站点开启免费服务且额度可用，才能直接解读；可用次数以解卦页面显示为准。自备 Key 的费用与限额由服务商决定。</p>
 
       <section class="section">
         <h2>操作步骤</h2>
         <ol class="steps">
           <li class="step">
             <h3>1. 注册 DeepSeek 账号</h3>
-            <img src="images/step-1-register.svg" alt="步骤一示意图：在 DeepSeek 开放平台用手机号注册并登录" width="900" height="300" loading="eager" decoding="async">
-            <p>打开 DeepSeek 开放平台 <strong>platform.deepseek.com</strong>，用手机号注册并登录。</p>
+            <img src="images/step-1-register.svg" alt="步骤一示意图：在 DeepSeek 开放平台注册并登录" width="900" height="300" loading="eager" decoding="async">
+            <p>打开<a href="https://platform.deepseek.com/" target="_blank" rel="noopener noreferrer">DeepSeek 开放平台</a>，按官网提供的方式注册并登录。</p>
             <p>请直接访问官网，不要使用来源不明的第三方链接。</p>
           </li>
           <li class="step">
-            <h3>2. 完成实名认证</h3>
-            <img src="images/step-2-verify.svg" alt="步骤二示意图：按平台要求提交实名信息完成认证" width="900" height="300" loading="lazy" decoding="async">
-            <p>按平台要求提交实名信息并完成认证；未完成时可能无法充值或正常调用接口。</p>
-            <p>实名信息只提交给 DeepSeek 官方，不要发给任何人。</p>
+            <h3>2. 按提示完成认证</h3>
+            <img src="images/step-2-verify.svg" alt="步骤二示意图：如平台要求认证，仅在官网完成" width="900" height="300" loading="lazy" decoding="async">
+            <p>如平台要求账号或实名认证，请按当前页面提示完成。认证方式与适用要求可能调整，不以本页图示作为固定流程。</p>
+            <p>认证资料只提交到官方页面，不要发送给他人或本项目维护者。</p>
           </li>
           <li class="step">
-            <h3>3. 充值 / 购买额度</h3>
-            <img src="images/step-3-recharge.svg" alt="步骤三示意图：为账户充值，接口按量计费" width="900" height="300" loading="lazy" decoding="async">
-            <p>DeepSeek 接口按量计费，使用前需要账户有余额；充值金额与支付方式以平台页面为准。</p>
-            <p>费用由 DeepSeek 收取，本项目不代付、不参与分成。</p>
+            <h3>3. 检查账户额度</h3>
+            <img src="images/step-3-recharge.svg" alt="步骤三示意图：检查账户额度，费用按平台规则结算" width="900" height="300" loading="lazy" decoding="async">
+            <p>使用自己的 Key 时，先确认账户额度可用；计费、余额与充值方式以平台页面为准。可查看<a href="https://api-docs.deepseek.com/quick_start/pricing/" target="_blank" rel="noopener noreferrer">官方计费说明</a>。</p>
+            <p>自备 Key 的调用费用由你与服务商结算，本项目不参与分成；本站免费额度是另一种调用方式，不使用你的 Key。</p>
           </li>
           <li class="step">
             <h3>4. 创建 API Key</h3>
@@ -66,7 +65,7 @@
             <h3>5. 回到玑衡填写</h3>
             <img src="images/step-5-fill-app.svg" alt="步骤五示意图：在应用的智能解读中粘贴并保存 Key" width="900" height="300" loading="lazy" decoding="async">
             <p>在应用里打开「更多 → 智能解读」，粘贴并保存 Key；也可以在一键解卦弹窗里直接填写。</p>
-            <p>Key 只保存在当前浏览器，不会上传到本项目服务器。</p>
+            <p>保存后，Key 按当前身份保存在本机浏览器；关闭标签页不会清除。自备 Key 的请求直接发往你填写的接口，请确认该地址可信。</p>
           </li>
         </ol>
       </section>
@@ -74,18 +73,19 @@
       <section class="section">
         <h2>安全提醒</h2>
         <ul class="list">
-          <li>API Key 等同于账号凭证：只保存在你自己的设备与浏览器中。</li>
+          <li>API Key 是接口访问凭据：请妥善保管，不在共享设备上持久保存。</li>
           <li>不要截图、发到群里，或粘贴到公开页面、反馈和第三方工具。</li>
           <li>如果怀疑泄露，请立即到 DeepSeek 平台删除该 Key 并新建一个。</li>
-          <li>本项目不代管、不收集、不转售你的 Key；也不会要求你提供 Key。</li>
+          <li>维护者不会要求你发送 Key。调用时会将 Key 发送给你配置的接口；不要填写不可信的接口地址。</li>
+          <li>停止使用时，可在“更多 → 智能解读”清空 Key 并保存；更换设备前请自行备份重要卦例，备份不包含 Key。</li>
         </ul>
       </section>
 
       <section class="section">
         <h2>费用与边界</h2>
         <ul class="list">
-          <li>接口按量计费，费用由 DeepSeek 收取；本项目不代付、不分成，也不对额度或结果作保证。</li>
-          <li>建议在平台设置余额或用量提醒，避免意外消耗。</li>
+          <li>自备 DeepSeek Key 的调用按平台规则计费，与本站免费额度分开；不对可用额度、响应速度或解读结果作保证。</li>
+          <li>留意平台的余额与用量记录；如有提醒功能，可按需要设置。</li>
           <li>本页仅为操作参考，不构成对 DeepSeek 服务的推荐、担保或背书；请以其官网当前页面为准。</li>
         </ul>
       </section>
@@ -94,15 +94,15 @@
         <h2>常见问题</h2>
         <dl class="qa">
           <dt>提示 Key 无效，或没有额度？</dt>
-          <dd>先确认 Key 是否复制完整、账户是否已充值；若仍无效，请在平台删除旧 Key 并新建一个，再回到应用重新保存。</dd>
+          <dd>先核对 Key 是否完整、接口地址和账户额度。认证失败时检查 Key；余额不足时查看平台账户。不要仅因网络超时就删除 Key，可稍后重试。若怀疑泄露，再到官网撤销并重新创建。错误说明见<a href="https://api-docs.deepseek.com/quick_start/error_codes/" target="_blank" rel="noopener noreferrer">官方接口文档</a>。</dd>
           <dt>找不到「API Keys」页面？</dt>
           <dd>以 DeepSeek 官网当前页面为准；入口名称或位置可能调整。</dd>
           <dt>可以把 Key 发给你们帮我配置吗？</dt>
           <dd>不可以。Key 只属于你，请勿发给任何人，包括本项目的维护者。</dd>
           <dt>换设备后 Key 还在吗？</dt>
-          <dd>Key 保存在当前浏览器、当前身份下；更换设备或清理浏览器数据后需要重新填写。</dd>
+          <dd>Key 按当前浏览器与本机身份保存，不自动跨设备同步。关闭标签页不会清除；换设备、切换到未配置的身份或清理浏览器数据后，需要重新填写。</dd>
           <dt>不填 Key 能用哪些功能？</dt>
-          <dd>排盘、主题、历史记录、导入导出和 AI 提示词的生成与复制都可以正常使用；「一键解卦」在站点免费额度开启时也可直接使用，额度用完后可填写自己的 Key 继续。</dd>
+          <dd>排盘、主题、记录、导入导出和 AI 提示词生成与复制均可使用。站点开启免费服务且额度可用时，也能直接解读；额度用完或服务不可用时，可自备 Key。次数以解卦页面显示为准。</dd>
         </dl>
       </section>
 
@@ -112,7 +112,7 @@
     </article>
     <footer class="site-footer">
       <div class="footer-links"><a href="../../project/index.html">项目说明</a><a href="../../manual/index.html">阅读手册</a></div>
-玑衡小六壬排盘 · V3.0.0 公开资料站
+玑衡小六壬排盘 · 公开资料站
     </footer>
   </main>
 </body>

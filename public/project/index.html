@@ -3,48 +3,53 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="玑衡小六壬排盘的项目说明、使用入口与公开边界。">
+<meta name="description" content="了解玑衡小六壬排盘的使用入口、设计理念、AI 解读与数据边界。">
 <title>项目说明 · 玑衡小六壬排盘</title>
   <link rel="stylesheet" href="../docs/site.css?v=20260921">
 </head>
 <body>
   <main class="page-wrap">
-    <nav class="site-nav" aria-label="资料站导航">
+    <nav class="site-nav site-nav--three" aria-label="资料站导航">
       <a class="site-nav__primary" href="../index.html">排盘应用</a>
       <a href="../manual/index.html">阅读手册</a>
-      <a href="../privacy/index.html">隐私边界</a>
       <a href="../changelog/index.html">更新记录</a>
     </nav>
     <article class="page-card">
 <p class="eyebrow">JI HENG · PROJECT</p>
       <h1>项目说明</h1>
-<p class="lead">玑衡小六壬排盘是一套本地优先的静态应用；这里说明如何开始、数据如何处理，以及公开资料如何阅读。</p>
+      <p class="lead">玑衡小六壬排盘是一款无须注册的民俗文化体验工具。排盘、记录与复盘在浏览器中完成，AI 解读按需使用，把判断留给自己。</p>
+
+      <section class="section">
+        <h2>第一次来，从这里开始</h2>
+        <ul class="list">
+          <li><strong>① 开始排盘：</strong>点上方「排盘应用」，选择手动、时间或随机取数，确认数字后点击“开始推算”。</li>
+          <li><strong>② 了解操作：</strong>从<a href="../manual/index.html#start">阅读手册的上手部分</a>开始；想学习术语与体系，可看<a href="../manual/index.html#study-guide">研习速览</a>。</li>
+          <li><strong>③ 按需解读：</strong>了解<a href="../manual/index.html#ai">AI 提示词与一键解卦</a>的区别，再选择是否调用模型。</li>
+        </ul>
+        <p class="meta">记录保存在当前浏览器，不自动跨设备同步；重要内容请定期导出备份。</p>
+      </section>
 
       <section class="grid" aria-label="核心入口">
         <a class="link-card" href="../manual/index.html">
           <h2>📖 阅读手册</h2>
-          <span>从第一次起卦到查看结果，按步骤了解常用功能。</span>
+          <span>从上手操作到研习与例解，按需深入。</span>
         </a>
-        <a class="link-card" href="../privacy/index.html">
-          <h2>🔒 隐私边界</h2>
-          <span>了解记录、主题和 AI 请求的数据去向。</span>
+        <a class="link-card" href="../guide/deepseek-key/index.html">
+          <h2>🔑 API Key 指南</h2>
+          <span>了解自备 Key 的填写、安全与费用说明。</span>
         </a>
         <a class="link-card" href="../changelog/index.html">
           <h2>🗓 更新记录</h2>
-          <span>查看已经上线的功能与资料调整。</span>
+          <span>查看近期功能更新与问题修复。</span>
         </a>
       </section>
 
       <section class="section">
         <h2>更多资料</h2>
-        <div class="secondary-grid">
-          <a class="link-card" href="../guide/deepseek-key/index.html">
-            <h2>🔑 API Key 指南</h2>
-            <span>自备 DeepSeek Key，或在站点额度开启时直接体验一键解卦。</span>
-          </a>
+        <div class="secondary-grid grid--two">
           <a class="link-card" href="../friends/index.html">
             <h2>🔗 友情链接</h2>
-            <span>学习参考、历史参照与作者推荐。</span>
+            <span>外部学习参考、历史参照与作者推荐。</span>
           </a>
           <a class="link-card" href="../thanks/index.html">
             <h2>🙏 鸣谢名单</h2>
@@ -54,21 +59,18 @@
       </section>
 
       <section class="section">
-        <h2>怎么开始</h2>
-        <p>第一次使用，建议先阅读手册，再回到排盘应用完成一次起卦。普通排盘和记录可以直接在当前浏览器中使用。</p>
-      </section>
-
-      <section class="section">
         <h2>设计取向</h2>
         <ul class="list">
-          <li><strong>本地优先：</strong>普通排盘、主题偏好和历史记录先在当前浏览器完成。</li>
-          <li><strong>主动选择：</strong>AI 提示词可以先检查和复制；一键解卦只有在你主动发起请求时才会使用外部接口——优先走你自己的 Key，未配置时经本站代理使用项目额度。</li>
+          <li><strong>本地优先：</strong>普通排盘、主题偏好和历史记录先在当前浏览器完成，不要求登录，也不自动跨设备同步。</li>
+          <li><strong>主动选择：</strong>AI 提示词在本机生成、检查与复制，不调用模型。一键解卦、重解、追问和风格对比等主动操作，会向模型接口发送问念与必要的排盘信息。</li>
+          <li><strong>两种调用：</strong>自备 API Key 时直连你填写的接口；未填写时，站点开启免费服务且额度可用，才能使用项目额度。可用次数以解卦页面显示为准，自备 Key 的费用与限额由服务商决定。</li>
+          <li><strong>数据说明：</strong>数据去向、Key 保存与免费额度规则见<a href="../manual/index.html#privacy">阅读手册 · 隐私与数据</a>。</li>
         </ul>
       </section>
 
       <section class="section">
         <h2>联系作者</h2>
-        <div class="grid">
+        <div class="grid grid--two">
           <a class="link-card contact-card" href="mailto:serried_ranges@outlook.com">
             <h2>📧 邮箱</h2>
             <span>serried_ranges@outlook.com</span>
@@ -83,14 +85,19 @@
 <span>交流与反馈，联系时请备注「小六壬」。</span>
           </div>
         </div>
-        <p class="meta">维护者个人微信号不在公开页面展示；如需微信沟通，可先通过邮箱或 QQ 群联系（友情链接页的第三方联系信息为其本人公开内容）。</p>
+        <p class="meta">反馈问题时请勿发送 API Key 或其他敏感资料。</p>
+      </section>
+
+      <section class="section">
+        <h2>技术说明</h2>
+        <p>想进一步了解计算、数据流向与功能边界，可阅读<a href="../manual/index.html#v-tech">手册的技术说明</a>。计算规则可以核对，预测结论与模型输出仍需谨慎判断。</p>
       </section>
 
       <p class="note"><strong>阅读边界：</strong>本站提供民俗文化体验、学习与记录参考，不替代医疗、法律、财务等专业意见，也不对现实结果作保证。</p>
     </article>
     <footer class="site-footer">
       <div class="footer-links"><a href="../friends/index.html">友情链接</a><a href="../thanks/index.html">鸣谢名单</a></div>
-玑衡小六壬排盘 · V3.0.0 公开资料站
+玑衡小六壬排盘 · 公开资料站
     </footer>
   </main>
   <script>
@@ -115,8 +122,15 @@
           document.body.append(input);
           input.select();
           input.setSelectionRange(0, value.length);
-          const copied = document.execCommand("copy");
-          input.remove();
+          let copied = false;
+          try {
+            copied = document.execCommand("copy");
+          } catch {
+            // 浏览器拒绝旧复制接口时，保留手动复制提示。
+          } finally {
+            input.remove();
+          }
+          button.dataset.copied = String(copied);
           if (copied) {
             button.dataset.copied = "true";
             show("已复制");

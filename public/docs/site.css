@@ -326,6 +326,11 @@ h1 {
 }
 .contact-card .copy-id { align-self: flex-start; margin: 0; }
 
+/* 按页面显式启用；不改动友情链接等未选用这些类的页面。 */
+.site-nav.site-nav--three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.grid.grid--two,
+.secondary-grid.grid--two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
 @media (max-width: 720px) {
   .grid,
   .secondary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -337,6 +342,8 @@ h1 {
   .grid,
   .secondary-grid { grid-template-columns: 1fr; }
   .secondary-grid { grid-auto-rows: auto; }
+  .grid.grid--two,
+  .secondary-grid.grid--two { grid-template-columns: minmax(0, 1fr); }
   h1 { font-size: clamp(32px, 9.6vw, 44px); }
   .lead { font-size: 16px; line-height: 1.8; }
   .link-card,

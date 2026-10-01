@@ -3,274 +3,1787 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="玑衡小六壬排盘 V3.0.0 使用手册：了解起卦、排盘、主题、记录与隐私边界。">
-<title>玑衡小六壬排盘 · 使用手册</title>
+  <meta name="color-scheme" content="light dark">
+  <meta name="description" content="玑衡小六壬排盘使用手册：起卦、排盘、主题、记录、AI 解读与隐私边界的纯网页版阅读手册。">
+  <title>玑衡小六壬排盘 · 使用手册</title>
   <style>
     :root {
-      --paper: #f5f0e8;
-      --card: rgba(255, 254, 249, .9);
-      --ink: #2c2416;
-      --muted: #6b5e4a;
-      --gold: #8a6d1f;
-      --line: #c6b17f;
-      --accent: #b14d2f;
+      --paper: #f4efe4;
+      --paper-2: #fffdfa;
+      --paper-3: #fbf7ee;
+      --ink: #2b2418;
+      --muted: #6f6450;
+      --gold: #9a7a2e;
+      --gold-2: #c8ab63;
+      --line: #ddd0b2;
+      --line-soft: #ece4cf;
+      --accent: #a84b34;
+      --green: #4f6b57;
+      --wash-a: rgba(212, 165, 116, .20);
+      --wash-b: rgba(138, 109, 31, .09);
+      --tint: rgba(247, 238, 217, .72);
+      --tint-red: rgba(247, 233, 227, .74);
+      --tint-green: rgba(233, 239, 230, .74);
+      --radius: 16px;
+      --shadow: 0 10px 30px rgba(90, 70, 30, .08);
+      --shadow-sm: 0 4px 14px rgba(90, 70, 30, .06);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper: #191612;
+        --paper-2: #221e18;
+        --paper-3: #1d1a15;
+        --ink: #efe8da;
+        --muted: #b3a894;
+        --gold: #d8b866;
+        --gold-2: #8a6d2a;
+        --line: #3a342a;
+        --line-soft: #2d2820;
+        --accent: #e08a72;
+        --green: #8fb59a;
+        --wash-a: rgba(216, 184, 102, .12);
+        --wash-b: rgba(216, 184, 102, .06);
+        --tint: rgba(216, 184, 102, .10);
+        --tint-red: rgba(224, 138, 114, .12);
+        --tint-green: rgba(143, 181, 154, .12);
+        --shadow: 0 12px 32px rgba(0, 0, 0, .34);
+        --shadow-sm: 0 4px 14px rgba(0, 0, 0, .26);
+      }
     }
     * { box-sizing: border-box; }
-    html { scroll-behavior: smooth; }
+    html { scroll-behavior: smooth; scroll-padding-top: 22px; }
     body {
       margin: 0;
       color: var(--ink);
       background:
-        radial-gradient(circle at 8% 4%, rgba(212,165,116,.18), transparent 28rem),
-        radial-gradient(circle at 92% 10%, rgba(138,109,31,.08), transparent 25rem),
+        radial-gradient(circle at 6% 2%, var(--wash-a), transparent 32rem),
+        radial-gradient(circle at 95% 6%, var(--wash-b), transparent 28rem),
         var(--paper);
-      font-family: "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-      line-height: 1.7;
+      font-family: "Microsoft YaHei", "Noto Sans CJK SC", "PingFang SC", sans-serif;
+      font-size: 16px;
+      line-height: 1.78;
       line-break: strict;
-      overflow-x: hidden;
       overflow-x: clip;
+      -webkit-text-size-adjust: 100%;
     }
-    .shell { width: min(1180px, calc(100% - 36px)); margin: 0 auto; }
-    header {
+    h1, h2, h3, h4 { font-family: "STSong", "SimSun", "Songti SC", serif; font-weight: 600; }
+    p { margin: 0; }
+    a { color: var(--gold); }
+    .shell { width: min(1180px, calc(100% - 40px)); margin: 0 auto; }
+
+    /* ---------- Hero ---------- */
+    .hero {
       position: relative;
       overflow: hidden;
-      padding: 48px 0 30px;
+      padding: 66px 0 44px;
       border-bottom: 1px solid var(--line);
-      background: linear-gradient(135deg, rgba(255,254,249,.54), rgba(255,254,249,.1));
+      background:
+        linear-gradient(135deg, var(--paper-2), transparent 72%),
+        linear-gradient(180deg, color-mix(in srgb, var(--paper-2) 60%, transparent), transparent);
     }
-    header::after {
+    .hero::after {
       content: "";
       position: absolute;
-      width: 260px;
-      height: 260px;
-      right: -110px;
-      top: -128px;
-      border: 1px solid rgba(138,109,31,.18);
+      width: 340px; height: 340px;
+      right: -128px; top: -158px;
+      border: 1px solid color-mix(in srgb, var(--gold) 24%, transparent);
       border-radius: 50%;
-      box-shadow: 0 0 0 18px rgba(138,109,31,.04), 0 0 0 36px rgba(138,109,31,.025);
+      box-shadow:
+        0 0 0 22px color-mix(in srgb, var(--gold) 7%, transparent),
+        0 0 0 46px color-mix(in srgb, var(--gold) 4%, transparent),
+        0 0 0 72px color-mix(in srgb, var(--gold) 2.4%, transparent);
       pointer-events: none;
     }
-    header .shell { position: relative; z-index: 1; max-width: 980px; }
+    .hero .shell { position: relative; z-index: 1; max-width: 980px; }
     .eyebrow {
-      margin: 0 0 8px;
+      margin: 0 0 10px;
       color: var(--gold);
-      letter-spacing: clamp(.08em, 1.2vw, .18em);
       font-size: 13px;
-      line-height: 1.5;
-      overflow-wrap: anywhere;
+      letter-spacing: clamp(.1em, 1.4vw, .22em);
     }
-    h1, h2, h3 { font-family: "STSong", "SimSun", serif; font-weight: 600; }
-    h1 {
-      max-width: 100%;
+    .hero h1 {
       margin: 0;
-      font-size: clamp(32px, 5vw, 58px);
-      line-height: 1.18;
-      letter-spacing: clamp(.04em, 1.1vw, .12em);
-      overflow-wrap: anywhere;
+      font-size: clamp(34px, 5.4vw, 62px);
+      line-height: 1.14;
+      letter-spacing: clamp(.04em, 1vw, .1em);
       text-wrap: balance;
     }
     .lead {
-      max-width: 70ch;
-      margin: 16px 0 0;
+      max-width: 64ch;
+      margin-top: 16px;
       color: var(--muted);
-      font-size: clamp(15px, 1.45vw, 18px);
-      line-height: 1.8;
-      overflow-wrap: anywhere;
+      font-size: clamp(15px, 1.4vw, 18px);
+      line-height: 1.82;
       text-wrap: pretty;
     }
-    nav {
-      display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap: 10px;
-      max-width: 780px;
+    .palace-strip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
       margin-top: 22px;
     }
-    nav a, .download {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 34px;
-      max-width: 100%;
-      padding: 7px 13px;
+    .palace-strip span {
+      padding: 5px 14px;
       border: 1px solid var(--line);
-      border-radius: 999px; color: var(--gold); background: rgba(255,254,249,.66);
-      text-decoration: none;
-      font-size: 14px;
-      line-height: 1.45;
-      text-align: center;
-      overflow-wrap: anywhere;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--paper-2) 72%, transparent);
+      color: var(--muted);
+      font-size: 13px;
+      letter-spacing: .1em;
     }
-    nav a:hover, .download:hover { color: var(--accent); border-color: var(--accent); }
-      nav a.site-nav__primary {
-        position: relative;
-        border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
-        background: linear-gradient(180deg, rgba(255,250,240,.96), rgba(247,234,215,.92));
-        color: var(--accent);
-        font-weight: 800;
-        box-shadow: 0 3px 10px rgba(155,73,53,.12);
-      }
-      nav a.site-nav__primary::after {
-        content: "";
-        position: absolute;
-        inset: 4px;
-        border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
-        border-radius: inherit;
-        pointer-events: none;
-      }
-      nav a.site-nav__primary:hover,
-      nav a.site-nav__primary:focus-visible {
-        background: linear-gradient(180deg, rgba(255,248,234,.98), rgba(243,223,199,.94));
-        box-shadow: 0 5px 14px rgba(155,73,53,.18);
-      }
+    .palace-strip span:first-child {
+      color: var(--gold);
+      border-color: color-mix(in srgb, var(--gold) 50%, var(--line));
+      background: var(--tint);
+    }
+
+    /* ---------- Layout ---------- */
+    main { padding: 40px 0 68px; }
+    .layout {
+      display: grid;
+      grid-template-columns: 236px minmax(0, 1fr);
+      gap: 44px;
+      align-items: start;
+    }
+    .layout > * { min-width: 0; }
+    .side { position: sticky; top: 22px; max-height: calc(100vh - 44px); overflow-y: auto; padding-right: 4px; }
+    .side__label {
+      margin-bottom: 10px;
+      color: var(--gold);
+      font-size: 12px;
+      letter-spacing: .2em;
+    }
+    .side__nav { display: grid; gap: 2px; }
+    .side__nav a {
+      display: flex;
+      gap: 10px;
+      align-items: baseline;
+      padding: 7px 11px;
+      border-radius: 10px;
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13.5px;
+      line-height: 1.4;
+      border-left: 2px solid transparent;
+    }
+    .side__nav a em {
+      font-style: normal;
+      color: var(--gold);
+      font-size: 11px;
+      letter-spacing: .08em;
+    }
+    .side__nav a:hover {
+      color: var(--ink);
+      background: color-mix(in srgb, var(--paper-2) 76%, transparent);
+      border-left-color: var(--gold-2);
+    }
+    .side__nav + .side__label { margin-top: 16px; }
+    .side__top {
+      display: inline-block;
+      margin-top: 14px;
+      color: var(--gold);
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    /* ---------- Notice + stats ---------- */
     .notice {
-      max-width: 980px;
-      margin: 26px auto 32px;
-      padding: 16px 20px;
-      border: 1px solid rgba(198,177,127,.36);
+      padding: 15px 20px;
+      border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent);
       border-left: 4px solid var(--gold);
       border-radius: 0 14px 14px 0;
-      background: rgba(255,254,249,.72);
+      background: var(--tint);
       color: var(--muted);
-      font-size: clamp(13px, 1.3vw, 15px);
-      line-height: 1.7;
-      overflow-wrap: anywhere;
+      font-size: 14px;
     }
     .notice strong { color: var(--ink); }
-    .highlights {
+    .stats {
       display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
+      grid-template-columns: repeat(4, minmax(0, 1fr));
       gap: 12px;
-      margin: 0 0 44px;
+      margin-top: 16px;
     }
-    .highlight {
-      min-width: 0;
-      min-height: 88px;
-      padding: 15px 17px;
-      border: 1px solid rgba(198,177,127,.68);
+    .stat {
+      position: relative;
+      overflow: hidden;
+      padding: 15px 16px;
+      border: 1px solid var(--line-soft);
       border-radius: 14px;
-      background: rgba(255,254,249,.65);
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
     }
-    .highlight b {
+    .stat::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 0; bottom: 0;
+      width: 3px;
+      background: var(--gold);
+      opacity: .7;
+    }
+    .stat b {
       display: block;
       color: var(--gold);
       font-family: "STSong", "SimSun", serif;
-      font-size: clamp(16px, 1.7vw, 19px);
+      font-size: clamp(16px, 1.6vw, 19px);
       line-height: 1.35;
-      overflow-wrap: anywhere;
     }
-    .highlight span {
+    .stat span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; }
+
+    /* ---------- Chapters ---------- */
+    .chapter { margin: 0 0 30px; scroll-margin-top: 22px; }
+    .chapter + .chapter { padding-top: 34px; border-top: 1px solid var(--line-soft); }
+    .chapter__head { display: flex; gap: 15px; align-items: flex-start; margin: 0 0 20px; }
+    .chapter__no {
+      flex: none;
+      width: 48px; height: 48px;
+      display: grid; place-items: center;
+      border: 1px solid color-mix(in srgb, var(--gold) 46%, transparent);
+      border-radius: 14px;
+      background: linear-gradient(160deg, var(--tint), transparent);
+      color: var(--gold);
+      font-family: "STSong", "SimSun", serif;
+      font-size: 19px;
+      font-weight: 700;
+    }
+    .chapter__head h2 {
+      margin: 0;
+      font-size: clamp(22px, 3vw, 30px);
+      letter-spacing: .06em;
+    }
+    .chapter__head p { margin-top: 4px; color: var(--muted); font-size: 14.5px; }
+
+    /* ---------- Grids & cards ---------- */
+    .grid { display: grid; gap: 14px; }
+    .grid--2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .stack { display: grid; gap: 14px; }
+    .mt { margin-top: 14px; }
+
+    .card {
+      position: relative;
+      overflow: hidden;
+      padding: 17px 20px 17px 23px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--paper-2), color-mix(in srgb, var(--paper-3) 88%, var(--paper-2)));
+      box-shadow: var(--shadow-sm);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+      border-color: color-mix(in srgb, var(--gold) 34%, var(--line-soft));
+    }
+    .card::before {
+      content: "";
+      position: absolute;
+      left: 0; top: 13px; bottom: 13px;
+      width: 4px;
+      border-radius: 4px;
+      background: var(--gold);
+    }
+    .card--green::before { background: var(--green); }
+    .card--red::before { background: var(--accent); }
+    .card--plain::before { display: none; }
+    .card--plain { background: var(--tint); }
+    .study-paths { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 14px; }
+    .study-path { padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--paper-2); }
+    .study-path p { margin-top: 5px; }
+    .study-path:last-child { grid-column: 1 / -1; }
+    @media (max-width: 620px) { .study-paths { grid-template-columns: minmax(0, 1fr); } }
+    .reading-index { margin-top: 16px; }
+    .reading-index details { margin-top: 10px; padding: 12px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--paper-2); }
+    .reading-index summary { padding-block: 4px; color: var(--ink); font-weight: 600; cursor: pointer; overflow-wrap: anywhere; }
+    .reading-index summary:focus-visible { outline: 2px solid var(--gold); outline-offset: 4px; border-radius: 4px; }
+    .reading-index details[open] summary { margin-bottom: 10px; }
+    .reading-index p { color: var(--muted); font-size: 14.8px; overflow-wrap: anywhere; }
+    .reading-index p + p { margin-top: 8px; }
+    .reading-index ul { padding-left: 20px; margin-top: 8px; color: var(--muted); font-size: 14.8px; }
+    .reading-index li + li { margin-top: 6px; }
+    @media print { .reading-index details { break-inside: avoid; } }
+    .card h3 { margin: 0 0 7px; font-size: 18px; }
+    .card p { color: var(--muted); font-size: 14.8px; }
+    .card p + p { margin-top: 7px; }
+    .card b { color: var(--ink); }
+    .tag {
+      display: inline-block;
+      margin-bottom: 8px;
+      padding: 2px 10px;
+      border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+      border-radius: 999px;
+      color: var(--gold);
+      font-size: 12px;
+      letter-spacing: .1em;
+    }
+
+    /* ---------- Steps ---------- */
+    .steps { display: grid; gap: 13px; }
+    .step {
+      display: flex;
+      gap: 15px;
+      align-items: flex-start;
+      padding: 16px 18px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+    }
+    .step__no {
+      flex: none;
+      width: 36px; height: 36px;
+      display: grid; place-items: center;
+      border-radius: 50%;
+      background: linear-gradient(160deg, var(--gold), color-mix(in srgb, var(--gold) 62%, #000));
+      color: #fffdf8;
+      font-size: 14px;
+      font-weight: 700;
+      box-shadow: 0 3px 10px color-mix(in srgb, var(--gold) 34%, transparent);
+    }
+    .step--green .step__no { background: linear-gradient(160deg, var(--green), color-mix(in srgb, var(--green) 62%, #000)); }
+    .step--red .step__no { background: linear-gradient(160deg, var(--accent), color-mix(in srgb, var(--accent) 62%, #000)); }
+    .step h3 { margin: 0 0 4px; font-size: 16.5px; }
+    .step p { color: var(--muted); font-size: 14.5px; }
+
+    /* ---------- Callout ---------- */
+    .callout {
+      margin-top: 14px;
+      padding: 16px 19px;
+      border: 1px solid color-mix(in srgb, var(--gold) 30%, transparent);
+      border-left: 4px solid var(--gold);
+      border-radius: 0 14px 14px 0;
+      background: var(--tint);
+    }
+    .callout--red { border-color: color-mix(in srgb, var(--accent) 30%, transparent); border-left-color: var(--accent); background: var(--tint-red); }
+    .callout--green { border-color: color-mix(in srgb, var(--green) 30%, transparent); border-left-color: var(--green); background: var(--tint-green); }
+    .callout strong { display: block; margin-bottom: 3px; font-size: 15px; }
+    .callout--red strong { color: var(--accent); }
+    .callout--green strong { color: var(--green); }
+    .callout p { color: var(--muted); font-size: 14.5px; }
+    .callout p + p { margin-top: 6px; }
+
+    /* ---------- Mode pills ---------- */
+    .modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .mode {
+      padding: 15px 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+    }
+    .mode h3 { margin: 0 0 3px; font-size: 16px; }
+    .mode p { color: var(--muted); font-size: 13.5px; }
+    .glyph {
+      display: inline-grid;
+      place-items: center;
+      width: 30px; height: 30px;
+      margin-right: 8px;
+      border-radius: 50%;
+      border: 2px solid currentColor;
+      font-size: 15px;
+      font-weight: 700;
+      vertical-align: -8px;
+    }
+    .glyph--green { color: var(--green); }
+    .glyph--red { color: var(--accent); }
+    .glyph--gold { color: var(--gold); }
+    .glyph--fill { background: var(--gold); color: var(--paper-2) !important; border-color: var(--gold); }
+
+    /* ---------- Flow ---------- */
+    .flow { display: flex; align-items: stretch; flex-wrap: wrap; gap: 10px; }
+    .flow__node {
+      flex: 1 1 180px;
+      padding: 15px 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: 14px;
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+    }
+    .flow__node b { display: block; font-size: 15px; }
+    .flow__node span { display: block; margin-top: 3px; color: var(--muted); font-size: 13px; }
+    .flow__arrow { align-self: center; flex: none; color: var(--gold-2); font-size: 22px; line-height: 1; }
+    .flow__node--green { background: var(--tint-green); }
+    .flow__node--red { background: var(--tint-red); }
+
+    /* ---------- Metrics ---------- */
+    .metrics { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; }
+    .metric {
+      position: relative;
+      overflow: hidden;
+      padding: 18px 18px 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+    }
+    .metric::before {
+      content: "";
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      height: 4px;
+      background: var(--gold);
+      opacity: .8;
+    }
+    .metric--green::before { background: var(--green); }
+    .metric--red::before { background: var(--accent); }
+    .metric b {
       display: block;
-      margin-top: 4px;
+      color: var(--gold);
+      font-size: clamp(30px, 3.8vw, 40px);
+      line-height: 1.08;
+      font-family: "STSong", "SimSun", serif;
+    }
+    .metric--green b { color: var(--green); }
+    .metric--red b { color: var(--accent); }
+    .metric strong { display: block; margin-top: 3px; font-size: 16px; }
+    .metric span { display: block; color: var(--muted); font-size: 13px; }
+
+    /* ---------- Swatches ---------- */
+    .swatches { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 13px;
+      border: 1px solid var(--line-soft);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+    }
+    .swatch__dots { display: flex; gap: 6px; flex: none; }
+    .swatch__dots i {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      border: 1px solid color-mix(in srgb, var(--ink) 12%, transparent);
+    }
+    .swatch b { font-size: 14.5px; }
+    .swatch span { display: block; color: var(--muted); font-size: 12.5px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .chips span {
+      padding: 3px 11px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
       color: var(--muted);
-      font-size: 13px;
-      line-height: 1.55;
-      overflow-wrap: anywhere;
+      font-size: 12.5px;
     }
-    main { padding: 34px 0 56px; }
-    .section-title { min-width: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 20px; margin: 42px 0 18px; }
-    .section-title h2 { min-width: 0; margin: 0; font-size: 30px; letter-spacing: .08em; overflow-wrap: anywhere; }
-    .section-title p { min-width: 0; margin: 0; color: var(--muted); font-size: 14px; overflow-wrap: anywhere; }
-    .book-page, .reference {
-      margin: 0 0 28px; padding: 14px; border: 1px solid rgba(198,177,127,.75);
-      border-radius: 18px; background: var(--card); box-shadow: 0 14px 34px rgba(98,76,33,.10);
+    .chips span.hi { color: var(--gold); border-color: color-mix(in srgb, var(--gold) 46%, transparent); background: var(--tint); }
+
+    /* ---------- Devices (CSS mock, not a screenshot) ---------- */
+    .devices { display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap; }
+    .device { text-align: center; color: var(--muted); font-size: 13px; }
+    .device__frame {
+      border: 2px solid var(--gold-2);
+      border-radius: 12px;
+      background: linear-gradient(180deg, var(--paper-3), var(--paper));
+      margin-bottom: 7px;
     }
-    .book-page img, .reference img { display: block; width: 100%; height: auto; border-radius: 10px; }
-    .image-frame { position: relative; }
-    .reference-badge {
-      position: absolute; top: 14px; right: 14px; z-index: 1; padding: 4px 9px;
-      border: 1px solid rgba(138,109,31,.65); border-radius: 999px;
-      color: var(--gold); background: rgba(255,254,249,.9); font-size: 12px;
-      letter-spacing: .08em; box-shadow: 0 4px 12px rgba(98,76,33,.12);
+    .device--desktop .device__frame { width: 176px; height: 108px; }
+    .device--tablet .device__frame { width: 88px; height: 116px; border-radius: 14px; }
+    .device--phone .device__frame { width: 56px; height: 100px; border-radius: 12px; }
+    .device__frame i { display: block; height: 5px; width: 52%; margin: 9px auto 0; border-radius: 999px; background: var(--line); }
+    .device__frame i + i { width: 74%; margin-top: 6px; }
+    .device__frame i + i + i { width: 40%; }
+
+    /* ---------- Rows ---------- */
+    .rows { display: grid; gap: 10px; }
+    .row {
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      padding: 13px 16px;
+      border: 1px solid var(--line-soft);
+      border-radius: 13px;
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
     }
-    figcaption { padding: 12px 6px 2px; color: var(--muted); font-size: 14px; }
-    figcaption strong { color: var(--ink); }
-    .reference-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; }
-    .reference { margin: 0; }
-    .reference .download { margin-top: 8px; }
-    footer { padding: 24px 0 54px; border-top: 1px solid var(--line); color: var(--muted); font-size: 14px; }
+    .row b { flex: none; min-width: 4.5em; color: var(--ink); font-size: 15px; }
+    .row span { color: var(--muted); font-size: 14px; }
+
+    /* ---------- Footer ---------- */
+    footer {
+      padding: 28px 0 60px;
+      border-top: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 14px;
+    }
+    footer .shell { max-width: 980px; }
     footer a { color: var(--gold); }
-    @media (max-width: 900px) {
-      .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .footer-links { margin-top: 12px; display: flex; flex-wrap: wrap; gap: 12px; }
+
+    /* ---------- Volume headings ---------- */
+    .vol {
+      margin: 52px 0 20px;
+      padding: 0 0 14px;
+      border-bottom: 2px solid color-mix(in srgb, var(--gold) 32%, var(--line-soft));
+      scroll-margin-top: 22px;
     }
-    @media (max-width: 700px) {
-      .shell { width: min(100% - 22px, 1180px); }
-      header { padding-top: 30px; }
-      header .shell { max-width: none; }
-      .highlights { margin-bottom: 34px; }
-      .reference-grid { grid-template-columns: 1fr; }
-      .section-title { display: block; }
-      .section-title p { margin-top: 3px; }
-      .book-page, .reference { padding: 8px; border-radius: 12px; }
+    .vol:first-child { margin-top: 8px; }
+    .vol__kicker { color: var(--gold); font-size: 12px; letter-spacing: .3em; }
+    .vol h2 { margin: 6px 0 0; font-size: clamp(24px, 3.4vw, 34px); letter-spacing: .08em; }
+    .vol__desc { margin-top: 6px; color: var(--muted); font-size: 14px; }
+
+    /* ---------- Entry cards ---------- */
+    .entry-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 16px; }
+    .entry {
+      position: relative;
+      overflow: hidden;
+      display: block;
+      padding: 18px 20px;
+      border: 1px solid var(--line-soft);
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, var(--paper-2), var(--paper-3));
+      box-shadow: var(--shadow-sm);
+      text-decoration: none;
+      color: var(--ink);
+      transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
     }
-    @media (max-width: 520px) {
+    .entry:hover { transform: translateY(-2px); box-shadow: var(--shadow); border-color: color-mix(in srgb, var(--gold) 34%, var(--line-soft)); }
+    .entry::before { content: ""; position: absolute; left: 0; top: 0; bottom: 0; width: 4px; background: var(--gold); }
+    .entry--green::before { background: var(--green); }
+    .entry--red::before { background: var(--accent); }
+    .entry b { display: block; font-family: "STSong", "SimSun", serif; font-size: 20px; }
+    .entry span { display: block; margin-top: 4px; color: var(--muted); font-size: 14px; }
+    .entry em { display: block; margin-top: 10px; color: var(--gold); font-style: normal; font-size: 13px; }
+    .site-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+    .site-nav a {
+      position: relative;
+      padding: 6px 15px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--paper-2) 70%, transparent);
+      color: var(--gold);
+      text-decoration: none;
+      font-size: 13.5px;
+      transition: color .18s ease, border-color .18s ease, background .18s ease, box-shadow .18s ease;
+    }
+    .site-nav a:hover { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 60%, var(--line)); }
+    .site-nav a.site-nav__primary {
+      border-color: color-mix(in srgb, var(--accent) 68%, var(--line));
+      background: linear-gradient(180deg, #fffaf0 0%, #f7ead7 100%);
+      color: var(--accent);
+      font-weight: 800;
+      box-shadow: 0 3px 10px rgba(155, 73, 53, .12);
+    }
+    .site-nav a.site-nav__primary::after {
+      content: "";
+      position: absolute;
+      inset: 4px;
+      border: 1px solid color-mix(in srgb, var(--accent) 52%, transparent);
+      border-radius: inherit;
+      pointer-events: none;
+    }
+    .site-nav a.site-nav__primary:hover,
+    .site-nav a.site-nav__primary:focus-visible {
+      background: linear-gradient(180deg, #fff8ea 0%, #f3dfc7 100%);
+      box-shadow: 0 5px 14px rgba(155, 73, 53, .18);
+    }
+    @media (prefers-color-scheme: dark) {
+      .site-nav a.site-nav__primary {
+        background: linear-gradient(180deg, rgba(224, 138, 114, .20), rgba(224, 138, 114, .08));
+      }
+    }
+
+    /* ---------- Data tables ---------- */
+    .table-wrap { overflow-x: auto; margin-top: 14px; min-width: 0; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--paper-2); -webkit-overflow-scrolling: touch; }
+    .table-wrap::-webkit-scrollbar { height: 8px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--line); border-radius: 999px; }
+    table.data { width: 100%; border-collapse: collapse; font-size: 13.5px; min-width: 560px; }
+    table.data caption { padding: 0 0 10px; text-align: left; color: var(--muted); font-size: 13px; line-height: 1.7; }
+    table.data th, table.data td { padding: 9px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; vertical-align: top; line-height: 1.6; }
+    table.data thead th { color: var(--gold); background: color-mix(in srgb, var(--tint) 70%, transparent); font-weight: 600; white-space: nowrap; }
+    table.data tbody tr:last-child td { border-bottom: 0; }
+    table.data tbody tr:hover td { background: color-mix(in srgb, var(--tint) 44%, transparent); }
+    table.data td strong { color: var(--ink); }
+
+    /* ---------- Credibility level ---------- */
+    .level { display: inline-block; margin-left: 6px; padding: 1px 8px; border-radius: 6px; font-size: 11px; letter-spacing: .06em; vertical-align: 1px; }
+    .level--a { color: var(--green); background: var(--tint-green); border: 1px solid color-mix(in srgb, var(--green) 34%, transparent); }
+    .level--b { color: var(--gold); background: var(--tint); border: 1px solid color-mix(in srgb, var(--gold) 34%, transparent); }
+
+    /* ---------- Verse / quote ---------- */
+    .verse {
+      margin-top: 8px;
+      padding: 10px 14px;
+      border-left: 3px solid var(--gold-2);
+      border-radius: 0 10px 10px 0;
+      background: var(--tint);
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+    .verse cite { display: block; margin-top: 3px; font-style: normal; font-size: 12px; color: var(--gold); }
+
+    /* ---------- Timeline ---------- */
+    .timeline { margin-top: 12px; border: 1px solid var(--line-soft); border-radius: 14px; background: var(--paper-2); overflow: hidden; }
+    .timeline .tl { display: grid; grid-template-columns: 8.5em minmax(0, 1fr); gap: 12px; padding: 10px 15px; border-bottom: 1px solid var(--line-soft); font-size: 13.5px; }
+    .timeline .tl:last-child { border-bottom: 0; }
+    .timeline .tl b { color: var(--gold); font-weight: 600; }
+    .timeline .tl span { color: var(--muted); }
+
+    /* ---------- Case ---------- */
+    .case { margin-top: 14px; padding: 17px 20px; border: 1px solid var(--line-soft); border-radius: var(--radius); background: linear-gradient(180deg, var(--paper-2), var(--paper-3)); box-shadow: var(--shadow-sm); }
+    .case__tag { display: inline-block; margin-bottom: 8px; padding: 2px 10px; border-radius: 999px; background: var(--tint); color: var(--gold); font-size: 12px; letter-spacing: .08em; }
+    .case h3 { margin: 0 0 8px; font-size: 17px; }
+    .case dl { margin: 0; display: grid; gap: 8px; }
+    .case dt { color: var(--gold); font-size: 13px; letter-spacing: .06em; }
+    .case dd { margin: 2px 0 0; color: var(--muted); font-size: 14px; }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 960px) {
+      .layout { grid-template-columns: 1fr; gap: 22px; }
+      .side { position: static; }
+      .side__nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
+      .side__top { display: none; }
+      .stats, .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid--3, .grid--4, .modes { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 620px) {
       .shell { width: min(100% - 24px, 1180px); }
-      header { padding: 28px 0 24px; }
-      .eyebrow { font-size: 11px; }
-      h1 { font-size: clamp(30px, 10vw, 42px); letter-spacing: .04em; }
-      .lead { margin-top: 13px; font-size: 15px; line-height: 1.75; }
-      nav { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 18px; }
-      nav a, .download { padding: 7px 10px; font-size: 13px; }
-      .notice { margin: 20px 0 26px; padding: 13px 14px; border-radius: 0 12px 12px 0; }
-      .highlights { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
-      .highlight { min-height: 0; padding: 13px 14px; }
-      .highlight b { font-size: 18px; }
-      .highlight span { font-size: 12.5px; }
+      .hero { padding: 42px 0 32px; }
+      .hero h1 { font-size: clamp(30px, 10vw, 44px); }
+      .notice { padding: 13px 15px; }
+      .stats, .grid--2, .grid--3, .grid--4, .modes, .metrics, .swatches, .entry-cards { grid-template-columns: 1fr; }
+      .timeline .tl { grid-template-columns: 1fr; gap: 2px; }
+      .card dd, .case dd { font-size: 13.5px; }
+      .side__nav { grid-template-columns: 1fr; }
+      .chapter__no { width: 42px; height: 42px; font-size: 17px; }
+      .card { padding: 15px 16px 15px 19px; }
+      .flow__arrow { transform: rotate(90deg); width: 100%; text-align: center; }
+      .row { flex-direction: column; gap: 2px; }
+      .row b { min-width: 0; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .card { transition: none; }
     }
     @media print {
-      body { background: #fff; }
-      header, .notice, .highlights, footer, .section-title p, nav { display: none; }
+      body { background: #fff; color: #000; font-size: 12px; }
+      .hero::after, .notice, .side, .palace-strip, footer .footer-links { display: none; }
+      .layout { grid-template-columns: 1fr; gap: 0; }
       .shell { width: 100%; }
       main { padding: 0; }
-      .section-title { margin: 0 0 8px; }
-      .book-page, .reference { break-inside: avoid; box-shadow: none; border: 0; padding: 0; margin-bottom: 16px; }
-      .book-page { break-after: page; }
-      .reference-grid { display: block; }
-      .reference { break-after: page; }
-      figcaption { display: none; }
+      .chapter, .card, .metric, .step, .row, .callout, .swatch { break-inside: avoid; box-shadow: none; }
+      .chapter + .chapter { padding-top: 14px; }
+      .card, .step, .mode, .flow__node, .metric, .row, .swatch { background: #fff; }
+      table.data { min-width: 0; }
+      table.data thead { display: table-header-group; }
+      .table-wrap { overflow: visible; }
+      .entry-cards, .timeline { display: none; }
     }
   </style>
 </head>
 <body>
-  <header>
+  <header class="hero" id="top">
     <div class="shell">
-<p class="eyebrow">玑衡 · V3.0.0 · 使用手册</p>
+      <p class="eyebrow">使用手册 · 由浅入深</p>
       <h1>从起念到复盘</h1>
-      <p class="lead">一册读懂起卦、排盘、主题切换、记录与 AI 解读。按“提出问题 → 完成起卦 → 查看结果 → 再决定是否使用 AI”的顺序阅读，把复杂留给工具，把判断留给自己。</p>
-      <nav aria-label="资料站导航"><a class="site-nav__primary" href="../index.html">排盘应用</a><a href="#manual">阅读手册</a><a href="../privacy/index.html">隐私边界</a><a href="../changelog/index.html">更新记录</a></nav>
+      <p class="lead">为第一次接触小六壬的读者而写：先学会起卦、排盘、记录与 AI 解读；想再深入，可以看入门与例解、文化源流和玑衡故事；数据流与技术边界放在最后。把复杂留给工具，把判断留给自己。</p>
+      <div class="palace-strip" aria-label="小六壬六位">
+        <span>大安</span><span>留连</span><span>速喜</span><span>赤口</span><span>小吉</span><span>空亡</span>
+      </div>
+      <nav class="entry-cards" aria-label="阅读方向">
+        <a class="entry entry--green" href="#v-basics"><b>入门与例解</b><span>基础概念、古法／江氏／道传对照、示例卦例。</span><em>从看懂盘面，到结合卦例学习 →</em></a>
+        <a class="entry" href="#v-culture"><b>文化源流</b><span>小六壬的历史背景、名称演变、文献与流派。</span><em>了解文化背景与不同读法 →</em></a>
+        <a class="entry entry--red" href="#v-story"><b>玑衡故事</b><span>项目初心、开发历程、设计取舍。</span><em>认识玑衡的由来与一路取舍 →</em></a>
+      </nav>
+      <nav class="site-nav" aria-label="资料站导航">
+        <a class="site-nav__primary" href="../index.html">排盘应用</a>
+        <a href="../project/index.html">项目说明</a>
+        <a href="../changelog/index.html">更新记录</a>
+      </nav>
     </div>
   </header>
 
   <main class="shell">
-    <div class="notice"><strong>阅读提示：</strong>图版用于帮助理解操作，实际按钮和页面请以当前排盘应用为准。本站页面可能被下载或转发，请不要把 API Key、身份证明或其他敏感资料放入截图、导出文件或反馈；隐私细节见 <a href="../privacy/index.html">隐私边界</a>。</div>
+    <div class="layout">
+      <aside class="side">
+        <p class="side__label">上 手 使 用</p>
+        <nav class="side__nav" aria-label="上手使用目录">
+          <a href="#start"><em>01</em>先问清，再起局</a>
+          <a href="#prep"><em>02</em>起卦前的提醒</a>
+          <a href="#input"><em>03</em>三种取数方式</a>
+          <a href="#result"><em>04</em>排盘结果与操作</a>
+          <a href="#records"><em>05</em>记录、复盘与备份</a>
+          <a href="#theme"><em>06</em>主题与时间偏好</a>
+          <a href="#ai"><em>07</em>AI 提示词与一键解卦</a>
+          <a href="#privacy"><em>08</em>隐私与数据</a>
+        </nav>
+        <p class="side__label">入 门 与 例 解</p>
+        <nav class="side__nav" aria-label="入门与例解目录">
+          <a href="#study-guide"><em>览</em>研习速览</a>
+          <a href="#palaces"><em>09</em>六宫与基础概念</a>
+          <a href="#symbol-guide"><em>象</em>类象辨读</a>
+          <a href="#method"><em>10</em>起课与断卦入门</a>
+          <a href="#compare"><em>11</em>古法 / 江氏 / 道传对照</a>
+          <a href="#cases"><em>12</em>示例卦例</a>
+        </nav>
+        <p class="side__label">文 化 源 流</p>
+        <nav class="side__nav" aria-label="文化源流目录">
+          <a href="#what"><em>13</em>小六壬是什么</a>
+          <a href="#history"><em>14</em>历史源流与考证</a>
+          <a href="#schools"><em>15</em>文献、流派与六曜</a>
+        </nav>
+        <p class="side__label">玑 衡 故 事</p>
+        <nav class="side__nav" aria-label="玑衡故事目录">
+          <a href="#story"><em>16</em>项目初心与取舍</a>
+        </nav>
+        <p class="side__label">技 术 说 明</p>
+        <nav class="side__nav" aria-label="技术说明目录">
+          <a href="#design"><em>17</em>设计理念与多端适配</a>
+          <a href="#ads"><em>18</em>无广告与数据流向</a>
+          <a href="#tech"><em>19</em>技术特点与边界</a>
+          <a href="#overview"><em>20</em>功能总览与验证</a>
+          <a href="#maintain"><em>21</em>模块化维护与扩展</a>
+          <a href="#web"><em>22</em>Web 形态与边界</a>
+        </nav>
+        <p class="side__label">附 录</p>
+        <nav class="side__nav" aria-label="附录目录">
+          <a href="#references"><em>附</em>参考资料与延伸阅读</a>
+          <a href="#reading-library"><em>索</em>研读索引</a>
+        </nav>
+        <a class="side__top" href="#top">回到顶部 ↑</a>
+      </aside>
 
-    <section class="highlights" aria-label="当前亮点速览">
-      <div class="highlight"><b>三种取数</b><span>手动输入、时间起卦、随机起卦</span></div>
-      <div class="highlight"><b>三种排盘</b><span>古法默认，江氏与道传可切换</span></div>
-      <div class="highlight"><b>AI 解读</b><span>先复制提示词，也可主动一键调用</span></div>
-      <div class="highlight"><b>本地记录</b><span>保存、搜索与 JSON 备份</span></div>
-      <div class="highlight"><b>主题切换</b><span>默认跟随系统（浅色暖金 / 深色星夜），也可手动选择</span></div>
-      <div class="highlight"><b>低权限使用</b><span>无需注册，不申请设备权限</span></div>    </section>
+      <div class="content">
+        <div class="notice">
+          <strong>阅读提示：</strong>手册分为五册，由浅入深：<strong>上手使用</strong>（01–08）先学会操作；<strong>入门与例解</strong>（09–12）看懂盘面与卦例；<strong>文化源流</strong>（13–15）了解历史与流派；<strong>玑衡故事</strong>（16）讲项目取舍；<strong>技术说明</strong>（17–22）留给愿意深入了解的读者。文化与体系内容按可信度标注 <span class="level level--a">A 级</span>（古籍 / 实物 / 学术）与 <span class="level level--b">B 级</span>（当代体系自述），并保留“并列记录、不裁定”的边界。页面随屏幕宽度自适应，按钮状态以运行中的页面为准；请不要把 API Key、身份证明或其他敏感资料放入问念、导出文件或反馈。
+        </div>
 
-    <section id="manual">
-      <div class="section-title"><h2>使用说明</h2><p>按顺序阅读，或直接跳到需要的章节</p></div>
-<figure class="book-page"><a href="images/00-封面.webp"><img src="images/00-封面.webp" alt="玑衡小六壬排盘 V3.0.0 使用手册封面" width="1200" height="1600" loading="eager" decoding="async"></a><figcaption><strong>00 · 封面</strong>　项目定位、阅读顺序与三条入门提醒。</figcaption></figure>
-      <figure class="book-page"><a href="images/01-建议的第一次使用.webp"><img src="images/01-建议的第一次使用.webp" alt="建议的第一次使用" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>01 · 建议的第一次使用</strong>　从问题表达开始，按输入、推算、查看结果的顺序完成第一次操作。</figcaption></figure>
-      <figure class="book-page"><a href="images/02-小六壬历史与来源.webp"><img src="images/02-小六壬历史与来源.webp" alt="小六壬历史与来源" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>02 · 小六壬历史与来源</strong>　区分可核对资料、传统说法与算法边界。</figcaption></figure>
-      <figure class="book-page"><a href="images/03-起卦前的注意事项.webp"><img src="images/03-起卦前的注意事项.webp" alt="起卦前的注意事项" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>03 · 起卦前的注意事项</strong>　一课一问、慎用随机数，并把结果作为思考参考。</figcaption></figure>
-      <figure class="book-page"><a href="images/04-三种取数方式.webp"><img src="images/04-三种取数方式.webp" alt="三种取数方式" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>04 · 三种取数方式</strong>　手动输入、时间起卦与随机起卦的使用差异。</figcaption></figure>
-      <figure class="book-page"><a href="images/05-排盘结果与操作.webp"><img src="images/05-排盘结果与操作.webp" alt="排盘结果与操作" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>05 · 排盘结果与操作</strong>　古法默认；江氏、道传为互斥开关，AI 提示词独立进入，一键解卦按需调用。</figcaption></figure>
-      <figure class="book-page"><a href="images/06-记录复盘与备份.webp"><img src="images/06-记录复盘与备份.webp" alt="记录复盘与备份" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>06 · 记录复盘与备份</strong>　历史记录、反馈、JSON 导入导出与本地备份边界。</figcaption></figure>
-      <figure class="book-page"><a href="images/07-主题时间与更多.webp"><img src="images/07-主题时间与更多.webp" alt="主题时间与更多" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>07 · 主题、时间与更多</strong>　暖金、墨青、星夜等皮肤，以及标题时间和更多菜单。</figcaption></figure>
-      <figure class="book-page"><a href="images/08-AI解读.webp"><img src="images/08-AI解读.webp" alt="AI 解读" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>08 · AI 解读</strong>　一键解卦（默认非流式，可按需开启流式）、四个固定提示词入口与调用边界。</figcaption></figure>
-      <figure class="book-page"><a href="images/09-本地数据与隐私.webp"><img src="images/09-本地数据与隐私.webp" alt="本地数据与隐私" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>09 · 本地数据与隐私</strong>　身份标识、记录与 Key 的本地保存方式，以及主动调用 AI 时的数据边界。</figcaption></figure>
-      <figure class="book-page"><a href="images/10-设计理念与多平台.webp"><img src="images/10-设计理念与多平台.webp" alt="设计理念与多平台" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>10 · 设计理念与多平台</strong>　低干扰的暖金美学、留白与响应式阅读体验。</figcaption></figure>
-      <figure class="book-page"><a href="images/11-无广告与数据流向.webp"><img src="images/11-无广告与数据流向.webp" alt="无广告与数据流向" width="1200" height="1600" loading="lazy" decoding="async"></a><figcaption><strong>11 · 无广告与数据流向</strong>　页面中的广告与数据流向说明，以及使用时需要留意的例外。</figcaption></figure>
-    </section>
+        <section class="stats" aria-label="亮点速览">
+          <div class="stat"><b>31 套主题皮肤</b><span>6 个阅读分组，默认跟随系统（浅色暖金 / 深色星夜）</span></div>
+          <div class="stat"><b>三种取数 · 三种排盘</b><span>手动 / 时间 / 随机；古法默认，江氏与道传互斥切换</span></div>
+          <div class="stat"><b>两种 AI 使用方式</b><span>本机生成提示词复制，或主动一键解卦</span></div>
+          <div class="stat"><b>本地记录与复盘</b><span>搜索、标签、JSON 导入导出备份</span></div>
+        </section>
 
+        <div class="vol" id="v-usage">
+          <p class="vol__kicker">册一</p>
+          <h2>上手使用</h2>
+          <p class="vol__desc">从提出问题到复盘备忘：起卦、排盘、记录、主题、AI 与数据边界。</p>
+        </div>
+
+        <!-- 01 -->
+        <section class="chapter" id="start">
+          <div class="chapter__head">
+            <span class="chapter__no">01</span>
+            <div><h2>先问清，再起局</h2><p>一套不赶时间、适合第一次使用的顺序</p></div>
+          </div>
+          <div class="steps">
+            <div class="step">
+              <span class="step__no">1</span>
+              <div>
+                <h3>先定一个具体问题</h3>
+                <p>一次只问一件事，尽量具体、可观察，并给出关心的时间范围。例如：“未来两周，我先完善方案还是先约客户沟通？”比“我以后会怎样？”更容易理解，也更方便之后复盘。</p>
+              </div>
+            </div>
+            <div class="step step--green">
+              <span class="step__no">2</span>
+              <div>
+                <h3>问念可以留空</h3>
+                <p>只想体验排盘时，可以不填问题；输入三个数仍可推算。若希望以后记得当时在想什么，建议写一句简洁问念。不要放入与问题无关的隐私或他人敏感信息。</p>
+              </div>
+            </div>
+            <div class="step step--red">
+              <span class="step__no">3</span>
+              <div>
+                <h3>选一种取数方式</h3>
+                <p>初次使用可手动输入三个数，或点“时间起卦”按当下农历月日时填入数值。先看一眼三个数字，再点击“开始推算”。快捷按钮只填数，不会直接排盘。不必为了“选到好结果”连续起多次；先记录当下判断。</p>
+              </div>
+            </div>
+          </div>
+          <aside class="callout callout--red">
+            <strong>关于“不建议上来就随机数”</strong>
+            <p>随机数只是由浏览器生成数字，不是更客观或更准确的途径。反复随机后只挑喜欢的结果，容易产生选择性解读。</p>
+            <p>没有合适的取数来源时，随机数可以用于练习；建议先明确问题，再起一次并保留记录。</p>
+          </aside>
+        </section>
+
+        <!-- 02 -->
+        <section class="chapter" id="prep">
+          <div class="chapter__head">
+            <span class="chapter__no">02</span>
+            <div><h2>起卦前的四个提醒</h2><p>把问题、方法与记录照顾好，比反复求一个答案更重要</p></div>
+          </div>
+          <div class="grid grid--2">
+            <article class="card"><span class="tag">01</span><h3>一课一问</h3><p>把一个关心点说清楚，并限定时间范围；多件事分开记录，减少事后混读。</p></article>
+            <article class="card card--green"><span class="tag" style="color:var(--green)">02</span><h3>先定取数法</h3><p>手动、时间、随机是不同输入来源。选一种适合自己的方式，避免同一问题连续重抽。</p></article>
+            <article class="card card--red"><span class="tag" style="color:var(--accent)">03</span><h3>留下原始记录</h3><p>记下当时的问题、三数与自己的判断。不要只保存后来挑中的结果，复盘才有上下文。</p></article>
+            <article class="card"><span class="tag">04</span><h3>保护自己与他人</h3><p>问念无需写姓名、证件、病历等无关敏感资料；涉及他人时，只描述自己关心的现实处境。</p></article>
+          </div>
+          <aside class="callout callout--red">
+            <strong>把它当作整理思路的工具</strong>
+            <p>盘面和解读属于传统文化体验，不是经过科学验证的确定性预测。不要让一次结果替代证据、沟通和专业建议。</p>
+            <p>医疗、法律、投资、工作安全等重大决定，应优先依据事实并咨询相应专业人士。</p>
+          </aside>
+        </section>
+
+        <!-- 03 -->
+        <section class="chapter" id="input">
+          <div class="chapter__head">
+            <span class="chapter__no">03</span>
+            <div><h2>三种取数方式</h2><p>手动、时间、随机：只是不同的输入来源</p></div>
+          </div>
+          <div class="grid grid--3">
+            <article class="card">
+              <h3>手动输入</h3>
+              <p>界面输入范围标为 1–999，建议按此范围填写。</p>
+              <p>适合自己已有取数习惯，或固定一组数做练习。</p>
+              <p>手动输入会被记录为“手动输入”方式。</p>
+            </article>
+            <article class="card card--green">
+              <h3>时间起卦</h3>
+              <p>点击“时间起卦”，程序读取点击时的本地日期，将<strong>农历月、农历日、时辰序号</strong>依次填入三数（子时记 1……亥时记 12）。</p>
+              <p>确认问念、数字，再按“开始推算”。即使跨过时辰或午夜，仍使用点击取数时的时间；手动改数后转为手动输入。</p>
+              <p>按设备当地时间，00:00 换日，23:00 不提前换日；闰月沿用同名月数。支持 1900-01-31 至 2100-12-31；旧时钟取数入口已移除，旧记录保留原结果。</p>
+            </article>
+            <article class="card card--red">
+              <h3>随机起卦</h3>
+              <p>点击后由浏览器随机接口生成三个 1–999 的数值。</p>
+              <p>适合演示或练习；它不比手动或时间取数更准确。</p>
+              <p>同一问题避免不断重抽、挑选结果。</p>
+            </article>
+          </div>
+          <aside class="callout">
+            <strong>推荐顺序</strong>
+            <p>写清一个问题 → 手动取数或时间起卦 → 核对输入 → 开始推算 → 记录自己的判断。</p>
+            <p>“随机起卦”是可选项，不是首次使用的必经步骤；页面不会替你判断哪种方法更灵验。</p>
+            <p>例：农历三月初五辰时取 3、5、5，依次为速喜 → 大安 → 小吉。旧时钟拆数习惯仍可通过手动输入练习，不另设快捷入口。</p>
+          </aside>
+        </section>
+
+        <!-- 04 -->
+        <section class="chapter" id="result">
+          <div class="chapter__head">
+            <span class="chapter__no">04</span>
+            <div><h2>排盘结果与操作</h2><p>一组输入，三种排盘；江氏支持表格与六宫图</p></div>
+          </div>
+          <article class="card card--plain">
+            <h3>先推算，再按需展开</h3>
+            <p>先点击“开始推算”，再按需切换江氏或道传；切换不重复取数、不新增卦例。三种排盘沿用同一组三数与时辰，分别应用各自规则。</p>
+          </article>
+          <div class="modes mt">
+            <div class="mode">
+              <h3><span class="glyph glyph--green">江</span>江氏排盘</h3>
+              <p>点击切换；再点回到古法。与道传互斥。结果右侧可切换“表格 / 六宫图”，按当前身份记住选择。</p>
+            </div>
+            <div class="mode">
+              <h3><span class="glyph glyph--red">道</span>道传排盘</h3>
+              <p>点击切换；再点回到古法。与江氏互斥。</p>
+            </div>
+            <div class="mode">
+              <h3><span class="glyph glyph--gold">✦</span>AI 提示词</h3>
+              <p>独立入口；无需 API Key，不改变卦例。</p>
+            </div>
+          </div>
+          <div class="stack mt">
+            <div class="row"><b>✨ 一键解卦</b><span>确认问事类型与性别语境后，再主动解卦；自备 Key 优先，未配置时，仅在站点服务开启且额度可用时使用项目额度；也可填写自己的 Key。</span></div>
+            <div class="row"><b>↻ 重新推算</b><span>沿用当前输入重新计算；相同卦例可能合并，重复点击同一次时间取数不会新增记录。</span></div>
+            <div class="row"><b>重置输入</b><span>清空输入，并关闭当前结果。</span></div>
+          </div>
+          <aside class="callout callout--green">
+            <strong>显示规则</strong>
+            <p>起卦前不展示排盘、反馈和智能操作，避免页面拥挤；起卦后按“排盘 → 解读 → 记录/复盘”渐进出现。</p>
+            <p>古法是默认视图；江氏与道传是互斥开关，AI 提示词独立进入，不会改变卦例。</p>
+          </aside>
+        </section>
+
+        <!-- 05 -->
+        <section class="chapter" id="records">
+          <div class="chapter__head">
+            <span class="chapter__no">05</span>
+            <div><h2>记录、复盘与备份</h2><p>把当下的想法留下，也给未来的自己留一份凭据</p></div>
+          </div>
+          <div class="grid grid--2">
+            <article class="card">
+              <h3>查找与回看</h3>
+              <p>点页眉“记录”打开卦例。搜索可按问念、宫位结果、数字与起卦方式查找。</p>
+              <p>点击“载入”回看保存的三数、结果与原时辰，不按当前时间重算，也不新增卦例。旧时间取数记录标注为“时间起卦（旧记录）”。</p>
+            </article>
+            <article class="card card--green">
+              <h3>复盘反馈</h3>
+              <p>在记录中打开复盘，可设置状态、标签、星级、实际结果和笔记。预设标签共 14 个，也可自定义。</p>
+              <p>复盘帮助比较“当时怎么判断”与“之后发生什么”，不等于系统验证预测准确。</p>
+            </article>
+            <article class="card card--red">
+              <h3>导出与导入</h3>
+              <p>更多 → 导出卦例：下载只包含卦例记录的 JSON 备份。</p>
+              <p>更多 → 导入卦例：先预览格式、数量、重复和冲突，再确认合并；旧版模板字段会被忽略。导入前先备份当前记录。</p>
+              <p>农历、时辰与取数规则随卦例备份保留；API Key 等接口凭据不随备份导出。问念、反馈可能含个人信息，分享前请自行检查。</p>
+            </article>
+            <article class="card card--plain">
+              <h3 style="color:var(--accent)">本机存储需要主动备份</h3>
+              <p>卦例数量上限为 999 条，实际可保存量也受浏览器存储配额影响。清理站点数据、换设备或使用不同站点地址，可能导致本地记录无法继续访问。</p>
+              <p>重要记录定期导出到你自己保管的位置；不要把同一台共享设备上的本地数据当成私密账号空间。</p>
+            </article>
+          </div>
+        </section>
+
+        <!-- 06 -->
+        <section class="chapter" id="theme">
+          <div class="chapter__head">
+            <span class="chapter__no">06</span>
+            <div><h2>主题与时间偏好</h2><p>换气质，不换规则；一套皮肤适配所有功能</p></div>
+          </div>
+          <article class="card card--plain">
+            <h3>主题只改变色彩与强调色</h3>
+            <p>排盘、记录、提示词和身份逻辑保持一致。当前 31 套主题分为通用与典藏，另有 1 个智能皮肤模式（跟随系统明暗）。</p>
+            <div class="chips">
+              <span class="hi">初见推荐 4</span><span>自然素色 4</span><span>人文暖调 4</span><span>青灰静观 7</span><span>暖色雅调 3</span><span>典藏系列 9</span>
+            </div>
+          </article>
+          <div class="swatches mt">
+            <div class="swatch"><span class="swatch__dots"><i style="background:#fbf3e0"></i><i style="background:#c79a2b"></i><i style="background:#a94336"></i></span><div><b>暖金</b><span>温纸 · 金线 · 朱砂点睛</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#eef3ef"></i><i style="background:#253d33"></i><i style="background:#3f6a53"></i></span><div><b>墨青</b><span>松墨 · 青绿 · 静阅读</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#0f172a"></i><i style="background:#6366f1"></i><i style="background:#f1f5f9"></i></span><div><b>星夜</b><span>夜色 · 冷光 · 高对比</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#eef8f6"></i><i style="background:#5caea1"></i><i style="background:#1f6f64"></i></span><div><b>琉璃</b><span>水色透亮 · 轻盈通透</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#edf3ea"></i><i style="background:#4a8a4c"></i><i style="background:#2a5a2c"></i></span><div><b>竹影</b><span>林下青绿 · 自然舒展</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#f7f7f5"></i><i style="background:#b8b6ad"></i><i style="background:#6e6a5f"></i></span><div><b>月白</b><span>珍珠留白 · 素净克制</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#eef1f4"></i><i style="background:#8094a7"></i><i style="background:#485a6e"></i></span><div><b>雾岚</b><span>雾蓝青灰 · 理性安静</span></div></div>
+            <div class="swatch"><span class="swatch__dots"><i style="background:#eef5f6"></i><i style="background:#4e9fa6"></i><i style="background:#275d6a"></i></span><div><b>极光</b><span>青蓝微光 · 清新现代</span></div></div>
+          </div>
+          <p style="margin-top:10px;color:var(--muted);font-size:13.5px;">以上仅为配色示意；请在应用的主题面板中选择并应用，不会改变排盘结果。</p>
+          <div class="grid grid--2 mt">
+            <article class="card">
+              <h3>标题时间</h3>
+              <p>默认隐藏；在“更多”中开启后显示当前时间，点击可查看或修改时空八字与黄历。手动调整标题时间不会改变“时间起卦”的设备取数时间。</p>
+            </article>
+            <article class="card card--green">
+              <h3>偏好按身份记忆</h3>
+              <p>所选主题与标题时间开关都会保留在本地身份中；换设备或清站点数据后需重新设置。布局已统一，不再提供多套布局切换。</p>
+            </article>
+          </div>
+          <article class="card mt">
+            <h3>自定义配色与静心词</h3>
+            <p>更多 → 主题皮肤 → 自定义配色：调整页面、卡片、正文、强调色与底栏，预览后点击应用。文字对比不足时会提示调整，也可切回预设主题。</p>
+            <p>首页静心词支持轻点顺序轮换、双击随机、长按选句；不改变数字、问念或排盘结果。</p>
+          </article>
+        </section>
+
+        <!-- 07 -->
+        <section class="chapter" id="ai">
+          <div class="chapter__head">
+            <span class="chapter__no">07</span>
+            <div><h2>AI 提示词与一键解卦</h2><p>提示词在本机生成；模型解读由你主动发起</p></div>
+          </div>
+          <article class="card">
+            <span class="tag">本机生成 · 可检查</span>
+            <h3>AI 提示词</h3>
+            <p>确认语境后，从四个固定入口生成提示词；这里只检查、编辑和复制，不调用模型。</p>
+            <div class="grid grid--2 mt">
+              <div class="row"><b>问事类型</b><span>自动判断 / 可修改</span></div>
+              <div class="row"><b>性别语境</b><span>男 · 女 · 不提供 / 其他</span></div>
+            </div>
+          </article>
+          <div class="modes mt">
+            <div class="mode"><h3><span class="glyph glyph--gold">古</span>古法</h3><p>原始三宫口径</p></div>
+            <div class="mode"><h3><span class="glyph glyph--green">江</span>江氏</h3><p>六亲六神盘面</p></div>
+            <div class="mode"><h3><span class="glyph glyph--red">道</span>道传</h3><p>死活六神口径</p></div>
+            <div class="mode"><h3><span class="glyph glyph--gold glyph--fill">合</span>汇总</h3><p>与一键解卦同源</p></div>
+          </div>
+          <article class="card mt">
+            <h3>文风与模型设置</h3>
+            <p>更多 → 智能解读：统一设置温和、古典、极简三种文风，默认温和；保存后用于一键解卦、重解和 AI 提示词。修改设置不会自动发起解卦，也不会改写已保存的解读。</p>
+            <p>首次使用默认开启深度思考，推理档位为 high（平衡），流式输出关闭；已保存的个人设置优先。深度思考可能等待更久，输出上限不足时可调高“最大输出 Token”或关闭思考再试。</p>
+            <p>结果中的“重解”会重新请求模型；“对比风格”所选每种文风各请求一次。“停止生成”只在请求进行时显示；失败后先看提示再重试，不必连续点击。</p>
+          </article>
+          <article class="card card--green mt">
+            <h3>站点免费额度（按需提供）</h3>
+            <p>未配置 Key 且站点已开启服务时，可使用免费额度；次数由站点配置，并受本机身份与网络 IP 限制，以解卦页面显示为准，UTC+8 每天 00:00 重置。计数数据库不保存问念与输出，但请求会经过本站代理转发到模型接口。</p>
+            <p>「玑衡添筹令」每次兑换 +5 次，每个身份与 IP 每天最多兑换 3 次；同一网络当日输错 3 次后暂停兑换。额度用完或服务未开启时，可自备 Key 直连自己的接口，具体费用与使用限额由服务商决定。</p>
+          </article>
+          <aside class="callout callout--green">
+            <strong>汇总提示词与一键解卦共用依据</strong>
+            <p>AI 提示词在本机生成，可检查、编辑和复制，不调用模型；一键解卦使用相同的综合依据。解读完成后会尝试保存到对应卦例，请留意保存结果提示。</p>
+            <p>提示词建议正文不超过 500 字（不含文末声明），不强制固定字数；模型仍可能偏离要求。这里编辑的文本只用于本次复制，不会替换一键解卦的规范提示词。</p>
+            <p>复制模式不需要 Key；调用模式可自备 Key 直连，或在服务开启且额度可用时使用项目额度。</p>
+          </aside>
+          <aside class="callout callout--red">
+            <strong>使用边界</strong>
+            <p>不配置 Key 也能完成排盘、记录、主题、复盘与提示词复制；一键解卦是可选便利，失败或空回答不会消耗免费次数。</p>
+            <p>两条路径共用问事语境与综合提示词依据，模型输出仍受接口和服务商影响。</p>
+          </aside>
+        </section>
+
+        <!-- 08 -->
+        <section class="chapter" id="privacy">
+          <div class="chapter__head">
+            <span class="chapter__no">08</span>
+            <div><h2>隐私与数据</h2><p>一页看懂：数据留在哪里、什么时候离开浏览器</p></div>
+          </div>
+          <article class="card card--plain">
+            <h3>这一章就是公开的隐私说明</h3>
+            <p>记住一句话——<strong>普通排盘与记录留在当前浏览器；主动发起模型解读时，问念与排盘摘要才会发送到接口</strong>。一键解卦、重解、风格对比和差异研判均属于模型调用，提示词预览与复制不属于。下面分开说明本机数据、请求与 Key。</p>
+          </article>
+          <div class="stack mt">
+            <article class="card">
+              <h3>本机身份与记录</h3>
+              <p>应用不要求登录；历史记录按当前浏览器里的本地身份分区，不会自动同步到其他设备。</p>
+              <p>身份标识不是账号或安全认证；同一浏览器的其他使用者仍可能接触本地数据。</p>
+              <p>清理站点数据、换设备或站点地址改变，可能导致记录无法继续访问。</p>
+            </article>
+            <article class="card card--red">
+              <h3>AI 请求会发送什么</h3>
+              <p>点击一键解卦后，问念与结构化排盘摘要会发送给所选模型接口：自备 Key 时直连你填写的地址。</p>
+              <p>未配置 Key 且站点服务开启、额度可用时，请求经本站代理转发。次数受本机身份与网络 IP 限制，以解卦页面显示为准，按 UTC+8 每天 00:00 重置；额度计数不保存问念与输出。</p>
+            </article>
+            <article class="card card--green">
+              <h3>Key 保存方式</h3>
+              <p>默认“记住在本机”：按当前身份存入浏览器 localStorage，下次打开可直接使用。</p>
+              <p>当前界面不提供“仅本次使用”开关；关闭标签页不会清除已保存的 Key。共享设备不建议保存，用毕请在“更多 → 智能解读”清空 Key 并保存。</p>
+              <p>Key 不放进卦例备份。自备 Key 随请求发送给你填写的接口，请确认地址可信；站点免费调用无需你的 Key。停止使用时可在智能解读设置中清除并保存。</p>
+            </article>
+          </div>
+          <aside class="callout">
+            <strong>数据保护小建议</strong>
+            <p>重要记录定期导出到自己保管的位置；公共设备不要持久保存 Key。AI 解读仅作参考，不替代专业意见。</p>
+          </aside>
+        </section>
+
+        <div class="vol" id="v-basics">
+          <p class="vol__kicker">册二</p>
+          <h2>入门与例解</h2>
+          <p class="vol__desc">基础概念、古法／江氏／道传对照与示例卦例——从看懂盘面到结合卦例学习。</p>
+        </div>
+
+        <!-- 09 -->
+        <section class="chapter" id="palaces">
+          <div class="chapter__head">
+            <span class="chapter__no">09</span>
+            <div><h2>六宫与基础概念</h2><p>逐宫意象、古断辞与常用术语</p></div>
+          </div>
+          <aside class="callout"><strong>先辨体系，再看类象</strong><p>下面只摘通书常见起句与中性象意，不提供健康诊断、禳解或恐吓性断辞。传统评价只供理解文本，不是对个人结果的判定；异文与体系差异见第 11 章。</p></aside>
+          <article class="card card--plain mt" id="study-guide">
+            <h3>研习速览</h3>
+            <p>先辨体系，再读规则；先记录原盘，再核对解释。按需要选一条路径，不必把所有资料从头读完。</p>
+            <div class="study-paths">
+              <div class="study-path"><strong>学会使用</strong><p><a href="#input">取数</a> → <a href="#result">排盘</a></p><p>三数、时辰与起点计数；时间按钮只负责填数。</p></div>
+              <div class="study-path"><strong>看懂术语</strong><p><a href="#palaces">基础概念</a> → <a href="#method">起课入门</a></p><p>六宫、六神、六亲、六星分开记，类象是传统词汇，不是事实推断。</p></div>
+              <div class="study-path"><strong>区分江氏与道传</strong><p><a href="#compare">三系对照</a></p><p>江氏重装卦与取用，道传看体用与三宫；五行、神名和数字不要跨系套用。</p></div>
+              <div class="study-path"><strong>练习复盘</strong><p><a href="#cases">示例卦例</a> → <a href="#records">记录反馈</a></p><p>背景、取数、原盘、解释、反馈分栏记录；缺失信息不补猜。</p></div>
+              <div class="study-path"><strong>了解文化</strong><p><a href="#history">源流考证</a> → <a href="#references">参考资料</a></p><p>传说、文献、后人研究分层看；名称相似不代表同一算法。</p></div>
+            </div>
+            <p class="mt">想进一步查阅，可看<a href="#symbol-guide">类象辨读</a>与<a href="#reading-library">研读索引</a>。资料中的教程规则与<a href="#implementation-boundary">当前程序实现</a>有差别，先辨清再复盘。</p>
+            <p class="mt">当前简单解卦按内置规则在本地生成；AI 提示词按当前卦例与所选文风生成。本册补充学习说明，不会自动改动算法、覆盖知识数据，也不会把整套研究资料发送给模型。</p>
+          </article>
+          <div class="grid grid--2">
+            <article class="card"><h3>大安</h3><p style="color:var(--gold)">青龙 · 木 · 东方 · 谋事数 1·5·7</p><div class="verse">大安事事昌（通书常见起句）</div><p class="mt">常见象意是安定、守成与停留。结合问题区分“稳定”与“进展慢”，不直接套作凡事顺利。</p></article>
+            <article class="card card--green"><h3>留连</h3><p style="color:var(--green)">玄武 · 水 · 北方 · 谋事数 2·8·10</p><div class="verse">留连事难成（通书常见起句）</div><p class="mt">常见象意是延迟、牵连与反复。学习时先找文本中如何解释过程，不把它直接判作失败；道传五行与六神另有配置。</p></article>
+            <article class="card card--red"><h3>速喜</h3><p style="color:var(--accent)">朱雀 · 火 · 南方 · 谋事数 3·6·9</p><div class="verse">速喜喜来临（通书常见起句）</div><p class="mt">常见象意是消息、快速变化与喜庆。快不等于稳，也不能仅凭名称推定事情已经发生。</p></article>
+            <article class="card"><h3>赤口</h3><p style="color:var(--gold)">白虎 · 金 · 西方 · 谋事数 4·7·10</p><div class="verse">赤口主口舌（通书常见起句）</div><p class="mt">常见象意是争执、分歧与沟通摩擦。只用于理解传统文本，不据此断定疾病、灾祸或他人恶意。</p></article>
+            <article class="card card--green"><h3>小吉</h3><p style="color:var(--green)">六合 · 木 · 和合 · 谋事数 1·5·7</p><div class="verse">小吉最吉昌（通书常见起句）</div><p class="mt">常见象意是协作、小成与流动。通书版本有木、水等异文；不要把这套属性直接代入道传或江氏盘。</p></article>
+            <article class="card card--red"><h3>空亡</h3><p style="color:var(--accent)">勾陈 · 土 · 中央 · 谋事数 3·6·9</p><div class="verse">空亡事不祥（通书常见起句）</div><p class="mt">常见象意是信息缺失、期待落空与尚未落实。保留“不确定”的空间，不以旧断辞恐吓读者。</p></article>
+          </div>
+          <article class="card mt" id="symbol-guide">
+            <h3>类象辨读</h3>
+            <p>“类象”是传统文本用于组织联想的词汇。先核对体系与问题，再把象意写成可以讨论的假设；颜色、神名或一个宫名都不能单独证明现实状况。</p>
+            <div class="table-wrap mt">
+              <table class="data">
+                <caption>五行常见文化配属：用于读懂资料，不用于确定人物、方位或事件。</caption>
+                <thead><tr><th>五行</th><th>常见颜色 / 方位</th><th>阅读时关注</th></tr></thead>
+                <tbody>
+                  <tr><td>木</td><td>青绿 / 东</td><td>生长、延展与条理</td></tr>
+                  <tr><td>火</td><td>红 / 南</td><td>显现、消息与速度</td></tr>
+                  <tr><td>土</td><td>黄 / 中央</td><td>承载、稳定与牵连</td></tr>
+                  <tr><td>金</td><td>白 / 西</td><td>界限、收敛与决断</td></tr>
+                  <tr><td>水</td><td>黑 / 北</td><td>流动、变化与隐含信息</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="mt">这是传统配属，不是界面的配色要求：程序会用蓝色表示水、金色表示金，以改善辨识。</p>
+            <p><strong>练习示意：</strong>问一项沟通安排，看到“留连”，可先理解为需要核实延迟、手续或反复；不能直接认定对方故意拖延。把现实信息、传统象意与自己的联想分开写，再看反馈。</p>
+            <p><strong>不作身体对应：</strong>本册不以五行、六神或八卦推断疾病；对方意图、遗失物位置等也不能仅靠类象确定。更多取舍见<a href="#reading-library">研读索引</a>。</p>
+          </article>
+          <article class="card card--plain mt">
+            <h3>常用术语速查</h3>
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>术语</th><th>释义</th></tr></thead>
+                <tbody>
+                  <tr><td><strong>起课 / 装卦</strong></td><td>起课先取数、确定落宫；装卦再配置地支、六亲、六神与六星。两者不要混为一步。</td></tr>
+                  <tr><td><strong>落宫</strong></td><td>掐算后最后停下的宫位；传统以时宫为结果，道传以落宫为“体”。</td></tr>
+                  <tr><td><strong>三宫 / 三盘</strong></td><td>月宫、日宫、时宫；或称天盘、地盘、人盘。</td></tr>
+                  <tr><td><strong>用神</strong></td><td>卦中代表“所问之事”的那组信息；“取用神”即确定它。</td></tr>
+                  <tr><td><strong>体 / 用</strong></td><td>道传：落宫为体（自身 / 结果），时辰为用（趋势 / 外力）。</td></tr>
+                  <tr><td><strong>六亲</strong></td><td>父母、兄弟、子孙、妻财、官鬼（＋自身）；由五行生克推演。</td></tr>
+                  <tr><td><strong>十二地支</strong></td><td>子丑寅卯辰巳午未申酉戌亥；配十二时辰。小六壬一般只用地支、不用天干。</td></tr>
+                  <tr><td><strong>应期</strong></td><td>传统资料中对发生时间的推断，可涉及季节、数字或地支；须注明体系与取法，不是可验证的精确日期保证。</td></tr>
+                  <tr><td><strong>外应</strong></td><td>资料中以偶遇、声音或物件等作联想的读法；不证明事件间存在因果，也不是本程序的自动取数入口。</td></tr>
+                  <tr><td><strong>转太极 / 三宫具象</strong></td><td>转太极是调整分析参照点，各系规则不同；三宫具象是道传资料中的进阶方法，先掌握基础再读。</td></tr>
+                  <tr><td><strong>身宫 / 用神</strong></td><td>身宫代表卦主，是江氏配置六亲的参照；用神代表当前所问对象，不一定就是身宫。</td></tr>
+                  <tr><td><strong>六宫 / 六神 / 六星</strong></td><td>六宫是大安等位置；江氏盘的六神是青龙等标签，六星为木、火、土、金、水与天空。旧文有把六宫称为“六神”的用法，须看上下文。</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <!-- 10 -->
+        <section class="chapter" id="method">
+          <div class="chapter__head">
+            <span class="chapter__no">10</span>
+            <div><h2>起课与断卦入门</h2><p>传统时间法起课三步、断卦四步与体用速记</p></div>
+          </div>
+          <div class="grid grid--2">
+            <article class="card">
+              <h3>起课三步（传统时间法） <span class="level level--a">A 级</span></h3>
+              <p><strong>① 起月：</strong>大安起正月，顺数到所求月份 → 月宫（大环境）。</p>
+              <p><strong>② 起日：</strong>从月宫起初一，顺数到所求日辰 → 日宫（过程 / 对方）。</p>
+              <p><strong>③ 起时：</strong>从日宫起子时，顺数到所求时辰 → 时宫（结果 / 自身）。</p>
+              <p class="mt">每一步都把起点记为 1，不先跳下一宫。三月初五辰时可写为 3、5、5，三宫为速喜 → 大安 → 小吉。程序的报数入口同样按三数接力计算；单数、日时与外应属于资料中的其他取法，不是当前时间按钮的模式。</p>
+            </article>
+            <article class="card card--green">
+              <h3>断读四步（按所选体系）</h3>
+              <p><strong>① 定吉凶：</strong>先看最终落宫（时宫）的吉凶属性。</p>
+              <p><strong>② 看三宫：</strong>月＝大环境 / 起因，日＝过程 / 客体，时＝结果 / 主体。</p>
+              <p><strong>③ 查规则：</strong>道传可看体用与三宫关系；江氏先核对装卦，再取用神。不要把不同体系的步骤拼成一个通用算法。</p>
+              <p><strong>④ 留待复盘：</strong>将象意写成有条件的解释，记录不确定处，再与现实反馈核对，不把数应直接当作精确日期。</p>
+            </article>
+          </div>
+          <article class="card mt">
+            <h3>五行生克</h3>
+            <p>传统象意的比较语言，不是现实事物间的物理作用或结果保证。“体”和“用”先确定属于哪套读法，再比较五行。</p>
+            <p>日宫与时宫数学上有 6 × 6＝36 种组合，不等于已核到 36 条通行口诀。资料缺文时保留空缺，不用推测补成“古诀”。</p>
+            <p>相生：木生火 → 火生土 → 土生金 → 金生水 → 水生木。</p>
+            <p>相克：金克木 → 木克土 → 土克水 → 水克火 → 火克金。</p>
+          </article>
+          <div class="table-wrap mt">
+            <table class="data">
+              <caption>道传资料中的体用读法：体系自述，不是通用规则或结果保证。</caption><thead><tr><th>体用关系</th><th>传统评价</th><th>象意</th></tr></thead>
+              <tbody>
+                <tr><td>用生体</td><td>大吉</td><td>外力相助、贵人相助</td></tr>
+                <tr><td>体克用</td><td>小吉</td><td>主动努力、可成事（“克出”）</td></tr>
+                <tr><td>体用比和（阴阳异）</td><td>吉</td><td>两相互助、合作相宜</td></tr>
+                <tr><td>体生用</td><td>小凶</td><td>付出无果、费心费力（“生出”）</td></tr>
+                <tr><td>用克体</td><td>大凶</td><td>受阻于外、诸事难成（“克入”）</td></tr>
+                <tr><td>体用比劫（阴阳同）</td><td>凶</td><td>竞力相争、小人阻碍</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="table-wrap mt">
+            <table class="data">
+              <thead><tr><th>三宫</th><th>角色</th><th>常见读法</th></tr></thead>
+              <tbody>
+                <tr><td>月宫 / 天盘</td><td>大环境、起因</td><td>事情的先天条件、大趋势</td></tr>
+                <tr><td>日宫 / 地盘</td><td>过程、对方</td><td>对方态度、事情发展过程</td></tr>
+                <tr><td>时宫 / 人盘</td><td>结果、自身</td><td>最终结果与眼前状态</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <aside class="callout callout--red">
+            <strong>操作纪律（民间传统说法，非科学结论）</strong>
+            <p>遇事即占、无事勿占；一事一占、初占为准；同一事不重占、不因结果不好而换时辰再占；不戏占、不占赌博与国运政治。</p>
+            <p>以上为传统惯例的整理，用于理解民间文化；不能替代医疗、法律、财务等专业意见。</p>
+          </aside>
+        </section>
+
+        <!-- 11 -->
+        <section class="chapter" id="compare">
+          <div class="chapter__head">
+            <span class="chapter__no">11</span>
+            <div><h2>古法 / 江氏 / 道传 对照</h2><p>同一套六宫，三系读法不同；并列记录、不混用</p></div>
+          </div>
+          <article class="card">
+            <h3>先厘清名号 <span class="level level--b">B 级</span></h3>
+            <p>下表比较公开资料的规则，不代表本程序提供全部取课方式。V3 统一从三数起课，时间按钮只填入农历月、日、时辰；切换江氏或道传后，按各自规则扩展同一卦例，不重新取数。</p>
+            <p>在本册所引的<strong>邵一尘系资料</strong>中，“道传”与“道家小六壬”两名并用；江氏的装卦与取用规则另成体系。名称相近不等于算法相同，也不能把所有带“道家”字样的资料都归入邵系。</p>
+          </article>
+          <div class="table-wrap mt">
+            <table class="data">
+              <thead><tr><th>对比项</th><th>传统（玉匣记 / 马前课）</th><th>道传 · 道家（邵系）</th><th>江氏（江春义系）</th></tr></thead>
+              <tbody>
+                <tr><td><strong>结构</strong></td><td>三宫（月/日/时），落宫直断</td><td>三宫＝天/地/人；落宫为体、时辰为用</td><td>六宫全装：地支＋六亲＋六神＋五星</td></tr>
+                <tr><td><strong>起课</strong></td><td>月日时</td><td>月日时（亦可用报数 / 外应）</td><td>日时／时刻／数字（不用月）</td></tr>
+                <tr><td><strong>断法</strong></td><td>口诀直断</td><td>象意＋体用＋转太极＋具象</td><td>取用神（六亲宫）＋生克旺衰，一课多断</td></tr>
+                <tr><td><strong>文献</strong></td><td>《玉匣记》</td><td>七篇＋《卜法浅要通则》＋十二卷叙述</td><td>公开教程与作者案例；整理索引不代表逐案验证</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="card mt card--plain" id="implementation-boundary">
+            <h3>资料读法与当前实现</h3>
+            <p>本册对照表介绍研究资料，不等于程序已经完整实现作者全部方法。程序统一接收三数，江氏视图以第三宫为“自身”，地支自大安宫按时辰所属阴阳隔位排列，六神、六星采用固定配宫。</p>
+            <p>公开江氏教程则有以时辰落身宫安排地支、按时辰与日落宫轮排六神和五星等读法。两者的起点与配置不完全相同，不能直接互换结果。</p>
+            <p>道传资料内部及其与程序之间也有六神配属差异，尤其留连、空亡。操作时看当前盘面，研习时注明版本；发现不同先核对取数、起点与配属，不用另一张表覆盖原盘。</p>
+          </article>
+          <article class="card mt card--red">
+            <h3>分歧最重的地方：五行与六神</h3>
+            <p>通书版：大安木青龙、留连水玄武、速喜火朱雀、赤口金白虎、小吉木六合、空亡土勾陈。</p>
+            <p>道传版：留连作“四方土·腾蛇”、小吉作“水·玄武”，自称“四方四季＋中央”之理。</p>
+            <p>江氏体系重心在“地支装卦”，六宫五行权重较低。三家数字也互不通用——本册并列记录，不裁定谁对。</p>
+          </article>
+          <article class="card mt card--plain">
+            <h3>同一课、不同读法</h3>
+            <p>若三宫落“速喜 → 速喜 → 空亡”：传统读法直接套落宫口诀；道传读法看三宫成象与体用；江氏则先装地支、六亲、六神、五星，再取用神看其所临宫与神。结论：同一“卦”，三系给出的信息层完全不同，这正是“不能混用”的原因。</p>
+          </article>
+          <aside class="callout">
+            <strong>阅读建议</strong>
+            <p>给每篇文章先“贴标签”：属于传统 / 道传 / 江氏 / 其他，再看其五行、数字、起课是否与所选框一致。</p>
+            <p>想快断吉凶看传统口诀；想细断来龙去脉看道传；想一事多断、关系网清晰看江氏。不东拼西凑。</p>
+          </aside>
+        </section>
+
+        <!-- 12 -->
+        <section class="chapter" id="cases">
+          <div class="chapter__head">
+            <span class="chapter__no">12</span>
+            <div><h2>示例卦例</h2><p>用公开教程案例演示“起课 → 装卦 → 取用神 → 断”的流程</p></div>
+          </div>
+          <aside class="callout callout--red">
+            <strong>先说明性质</strong>
+            <p>以下案例取自江氏公开教程（<span class="level level--b">B 级</span>当代体系自述），只演示术语与断读。教程有不用月份的日时取数法，与本程序统一的三数入口不同，<strong>不能直接用“时间起卦”复现全部案例</strong>；反馈是个案记录，不是准确性验证或决策建议。</p>
+          </aside>
+          <div class="case">
+            <span class="case__tag">案例一 · 婚姻</span>
+            <h3>“后天去离婚能离成吗”</h3>
+            <dl>
+              <dt>起课</dt><dd>阴历二月十八日巳时。大安起日数 18 → 空亡；空亡起子数巳 → 小吉；以巳为自身从小吉装卦。</dd>
+              <dt>装卦</dt><dd>地支：小吉巳（自身）、空亡未、大安酉、留连亥、速喜丑、赤口卯；六亲：留连亥克巳 → 官鬼（丈夫）；六神：巳亥空亡起青龙 → 空亡青龙、大安朱雀、留连勾陈……</dd>
+              <dt>取用神</dt><dd>问丈夫 → 官鬼（留连亥）。</dd>
+              <dt>断读</dt><dd>官鬼临留连（拖延、反复）＋临勾陈（不动）→ 难离成。教程所载反馈：没离成。</dd>
+            </dl>
+          </div>
+          <div class="case">
+            <span class="case__tag">案例二 · 交易</span>
+            <h3>库存产品与意向客户能否成交</h3>
+            <dl>
+              <dt>起课</dt><dd>农历二月初七巳时。大安起日数 7 → 大安；大安起子数巳 → 空亡；以巳为自身从空亡装卦。</dd>
+              <dt>装卦</dt><dd>六亲：留连酉被巳克 → 妻财；速喜亥克巳 → 官鬼；六神：空亡起青龙顺排。</dd>
+              <dt>取用神</dt><dd>钱财交易 → 妻财（留连酉）。</dd>
+              <dt>断读</dt><dd>妻财临留连（拖延反复、不动）＋临勾陈（缓慢不动）→ 不成。教程所载反馈：最终没成交。</dd>
+            </dl>
+          </div>
+          <div class="case">
+            <span class="case__tag">案例三 · 求职</span>
+            <h3>应聘事业单位能否通过面试</h3>
+            <dl>
+              <dt>起课</dt><dd>农历四月初五未时。大安起日数 5 → 小吉；小吉起子数未 → 空亡；以未为自身从空亡装卦。</dd>
+              <dt>装卦</dt><dd>六亲：赤口卯克未 → 官鬼；六神：丑未留连起青龙 → 留连青龙、速喜朱雀、赤口勾陈……</dd>
+              <dt>取用神</dt><dd>问自己 → 自身（空亡未）。</dd>
+              <dt>断读</dt><dd>自身临空亡（想法落空、求谋艰难）＋临玄武（暗昧、小人）→ 面试不成功。教程所载反馈：没有成功。</dd>
+            </dl>
+          </div>
+          <article class="card card--plain mt">
+            <h3>怎么读这类案例</h3>
+            <p>先看“用神”取的是哪一宫，再看该宫所临五行、六神与所处地支，最后结合问事语境下断。读时把“卦”与“反馈”分开看：卦是当时的判断，反馈是后来发生的事。</p>
+            <p class="mt">复盘可按“问题与时限 → 体系与取数 → 原盘 → 当时解释 → 后续反馈 → 差异原因”记录；分别标明规则、推理与个人联想。缺少原盘、时间或反馈的素材只能作片段阅读，不能补写成完整案例；未应验与尚未反馈也应保留。</p>
+          </article>
+        </section>
+
+        <div class="vol" id="v-culture">
+          <p class="vol__kicker">册三</p>
+          <h2>文化源流</h2>
+          <p class="vol__desc">小六壬的历史背景、名称演变、文献与流派。</p>
+        </div>
+
+        <!-- 13 -->
+        <section class="chapter" id="what">
+          <div class="chapter__head">
+            <span class="chapter__no">13</span>
+            <div><h2>小六壬是什么</h2><p>先认识名称与六宫，再谈来源与读法</p></div>
+          </div>
+          <article class="card">
+            <h3>一句话认识小六壬 <span class="level level--a">A 级</span></h3>
+            <p>小六壬又称<strong>六壬时课、诸葛马前课、掐指一算</strong>，是流传于民间的掌诀占法：在左手六个固定位置（大安、留连、速喜、赤口、小吉、空亡）上，按“月上起日、日上起时”或报数等方式循环掐算，以落入之宫判断。三吉宫为大安、速喜、小吉；三凶宫为留连、赤口、空亡。</p>
+          </article>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>宫位</th><th>吉凶</th><th>五行</th><th>颜色</th><th>方位</th><th>六神</th><th>谋事数</th><th>一句话意象</th></tr></thead>
+              <tbody>
+                <tr><td><strong>大安</strong></td><td>大吉</td><td>木</td><td>青</td><td>东</td><td>青龙</td><td>1·5·7</td><td>身不动，平安稳定，宜静</td></tr>
+                <tr><td><strong>留连</strong></td><td>小凶</td><td>水</td><td>黑</td><td>北</td><td>玄武</td><td>2·8·10</td><td>卒未归，拖延反复，纠缠</td></tr>
+                <tr><td><strong>速喜</strong></td><td>中吉</td><td>火</td><td>红</td><td>南</td><td>朱雀</td><td>3·6·9</td><td>人便至，喜讯快来，迅速</td></tr>
+                <tr><td><strong>赤口</strong></td><td>中凶</td><td>金</td><td>白</td><td>西</td><td>白虎</td><td>4·7·10</td><td>官事凶，口舌是非，惊险</td></tr>
+                <tr><td><strong>小吉</strong></td><td>小吉</td><td>木</td><td>—</td><td>和合</td><td>六合</td><td>1·5·7</td><td>人来喜，和合顺利，小成</td></tr>
+                <tr><td><strong>空亡</strong></td><td>大凶</td><td>土</td><td>黄</td><td>中央</td><td>勾陈</td><td>3·6·9</td><td>音信稀，落空无果，谋事不成</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <aside class="callout callout--red">
+            <strong>先记住两条边界</strong>
+            <p>上表为“通书 / 民间综合版”的阅读摘要；道传（道家）与江氏等体系在五行、六神、数字上有分歧（见<a href="#compare">第 11 章</a>），本册<strong>并列记录、不裁定</strong>唯一正解，也不应把这张文化参考表当作程序的通用配置。</p>
+            <p>小六壬属于传统术数与民俗文化，“灵验”不是科学结论，不能替代医疗、法律、财务等专业判断。</p>
+          </aside>
+        </section>
+
+        <!-- 14 -->
+        <section class="chapter" id="history">
+          <div class="chapter__head">
+            <span class="chapter__no">14</span>
+            <div><h2>历史源流与考证</h2><p>尊重传统，也把可考证与传说分开</p></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>名称</th><th>说明</th></tr></thead>
+              <tbody>
+                <tr><td><strong>小六壬</strong></td><td>今日常用名；研究资料列有《协纪辨方书》等相关记载，具体年代与语义需结合版本、原页核对。</td></tr>
+                <tr><td><strong>六壬时课</strong></td><td>《玉匣记》中所载名称：“李淳风六壬时课”。</td></tr>
+                <tr><td><strong>诸葛马前课</strong></td><td>民间俗称，一说诸葛亮行军时在马前掐指起课，故称“马前课”。</td></tr>
+                <tr><td><strong>六兀轮经 / 六轮经</strong></td><td>研究资料常将其与六曜择日、上兀下兀日并列讨论；相似轮布不等于已证实直接传承。</td></tr>
+                <tr><td><strong>掐指一算</strong></td><td>民间口传俗称。</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="card card--red mt">
+            <h3>祖师传说要留有余地</h3>
+            <p><strong>诸葛亮、李淳风</strong>：通书与民间资料常见相关题名，但题名本身不足以证明由本人创制；本次材料也不足以确定最初作者。</p>
+            <p><strong>东方朔</strong>：本次材料中的相关说法缺少可核原始出处，不作为已确定的起源。</p>
+            <p>“马前课”另有托名诸葛亮的<strong>十四课谶诗</strong>（预言朝代兴衰），与掐指起课的小六壬是两回事，注意区分。</p>
+          </article>
+          <div class="timeline">
+            <div class="tl"><b>早期轮布线索</b><span>研究资料涉及敦煌占卜文书、宋元“兀法”等材料。轮布或名称相近，只能作为比较线索，不能据此确认现代算法的源头。</span></div>
+            <div class="tl"><b>传世时课文本</b><span>通书中可见“六壬时课”与月、日、时轮数的相关读法；应区分所用版本、后人整理与当代规则。</span></div>
+            <div class="tl"><b>日本馆藏 · 1688</b><span>早稻田馆藏目录记录《头书长历》1688 年刊本，并注明缺损。这能核对版本线索，不足以证明它是最早完整文本或与本程序算法一致。</span></div>
+
+
+            <div class="tl"><b>当代公开体系</b><span>江氏、道传等教程逐步公开，各自扩展装卦、体用或三宫读法。学习时按作者与规则区分，不因名称相同就混用。</span></div>
+          </div>
+          <article class="card card--green mt">
+            <h3>三类阅读线索</h3>
+            <p><strong>择日资料：</strong>关注轮布、历注与名称变化；文献之间的相似性不直接构成已证实的传承链。</p>
+            <p><strong>时课资料：</strong>关注月日时取数、计数起点与断辞异文；原书读法与软件实现需要分别说明。</p>
+            <p><strong>起源传说：</strong>记录文化背景，不据题名确认创制者，也不以传说证明预测有效。</p>
+          </article>
+          <article class="card mt">
+            <h3>可以确认的文献线索 <span class="level level--a">A 级</span></h3>
+            <p>中国台湾教育部辞典将小六壬解释为以大安、留连、速喜、赤口、小吉、空亡六位，按月、日、时轮数的占法。</p>
+            <p>中国台湾地区“国立中央图书馆”藏有明代《六壬集应钤》钞本，馆藏书目记录其序跋含弘治十五年（1502）纪年；这是六壬文献传统的实物线索，不等于证明现代各类“小六壬”算法都形成于同一年代。</p>
+          </article>
+          <article class="card card--plain mt">
+            <h3 style="font-size:16px;">仍属悬案（并列记录）</h3>
+            <p>名称来源、与式法六壬的关系、各宫断辞何时定型，仍有不同解释。保留分歧，待版本与原页证据补齐；不把暂缺证据写成肯定或否定的定论。</p>
+          </article>
+        </section>
+
+        <!-- 15 -->
+        <section class="chapter" id="schools">
+          <div class="chapter__head">
+            <span class="chapter__no">15</span>
+            <div><h2>文献、流派与六曜</h2><p>主要文献、日本六曜，以及当代流派的家族树</p></div>
+          </div>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>文献</th><th>要点</th></tr></thead>
+              <tbody>
+                <tr><td><strong>《玉匣记》</strong></td><td>通书与择日资料，常见许真君题名及“李淳风六壬时课”；需分辨版本与后人整理。</td></tr>
+                <tr><td><strong>《协纪辨方书》</strong></td><td>清代择吉文献，研究资料列有相关辨讹条目；阅读时核对原页与上下文，不据此判断今日算法。</td></tr>
+                <tr><td><strong>《居家必用事类全集》</strong></td><td>研究资料引用其“兀法”等条目；不同版本的内容与年代需分别核对。</td></tr>
+                <tr><td><strong>《事林广记》</strong></td><td>研究资料列作六曜与轮布线索；名称、排列和所用版本应对照原页。</td></tr>
+                <tr><td><strong>敦煌 P.3803</strong></td><td>研究资料列作早期轮布的比较线索；不能仅凭相似结构认定为现代小六壬的直接来源。</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="card mt">
+            <h3>日本“六曜”：一支历注体系 <span class="level level--a">A 级</span></h3>
+            <p>六曜约 14 世纪传入日本，演变为今日“先胜、友引、先负、佛灭、大安、赤口”，主要作为历书择日注文，与中国用于占卜的小六壬用途不同。</p>
+            <p>现行推算：旧历的“月份＋日期”相加，除以 6 取余——整除为大安，余 1～5 依次为赤口、先胜、友引、先负、佛灭。</p>
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>六曜</th><th>一般解释</th></tr></thead>
+                <tbody>
+                  <tr><td>先胜</td><td>“抢先者胜”；急事宜，上午吉、下午凶</td></tr>
+                  <tr><td>友引</td><td>喜事吉，忌丧事；朝夕吉、正午凶</td></tr>
+                  <tr><td>先负</td><td>宜静守谨慎；上午凶、下午吉</td></tr>
+                  <tr><td>佛灭</td><td>万事凶（葬礼法事无妨）</td></tr>
+                  <tr><td>大安</td><td>万事大吉，尤宜婚礼</td></tr>
+                  <tr><td>赤口</td><td>凶日，注意火与刃物；正午吉、朝夕凶</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <article class="card mt">
+            <h3>当代流派家族树（摘要） <span class="level level--b">B 级</span></h3>
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>流派</th><th>关键</th><th>一句话特征</th></tr></thead>
+                <tbody>
+                  <tr><td>民间单宫 / 三宫马前课</td><td>民间口传</td><td>落宫直断吉凶，结构最简单</td></tr>
+                  <tr><td>李淳风六壬时课</td><td>《玉匣记》</td><td>月→日→时轮数；与当代扩展规则分别看</td></tr>
+                  <tr><td>道传 / 道家小六壬</td><td>邵一尘相关公开资料</td><td>三盘＋体用＋转太极＋具象</td></tr>
+                  <tr><td>江氏小六壬</td><td>江春义 / 江阳君</td><td>六宫装卦：地支＋六亲＋六神＋五星</td></tr>
+                  <tr><td>乐命堂“深度学”</td><td>潘乐德相关资料</td><td>六曜＋六神两套系统切换</td></tr>
+                  <tr><td>马前双留恋（十二宫）</td><td>民间</td><td>六宫铺十二支，口诀多而少解卦法</td></tr>
+                  <tr><td>中六壬·天罡掌诀</td><td>霍斐然整理</td><td>十神将＋加孟/仲/季（关联流派，勿混）</td></tr>
+                  <tr><td>日本六曜</td><td>14 世纪传入</td><td>历注体系（非占卜体系）</td></tr>
+                  <tr><td>翻版群 / 江氏衍生 / 市场新型</td><td>网络</td><td>大同小异，或各自叠加八字、符法等</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <aside class="callout">
+            <strong>如何甄别（综合整理者建议）</strong>
+            <p>看是否交代具体技法结构（宫位、起课、断法逻辑），而非只讲“灵验”；看是否承认流派差异与传承，而非自称唯一真传。</p>
+            <p>警惕高价“秘传”课程与“资料加密”式营销；涉及健康、法律、投资，永远以专业人士意见为准。</p>
+          </aside>
+        </section>
+
+        <div class="vol" id="v-story">
+          <p class="vol__kicker">册四</p>
+          <h2>玑衡故事</h2>
+          <p class="vol__desc">项目初心、开发历程与设计取舍。</p>
+        </div>
+
+        <!-- 16 -->
+        <section class="chapter" id="story">
+          <div class="chapter__head">
+            <span class="chapter__no">16</span>
+            <div><h2>项目初心与设计取舍</h2><p>让工具服务于思考，而不是把判断变成必须购买的答案</p></div>
+          </div>
+          <article class="card card--plain">
+            <h3>起点：先把工具做出来</h3>
+            <p>项目最初只是一次“把排盘放到浏览器里”的尝试。没有先做账号、后台或复杂部署，而是先验证一件事：历法和排盘能不能算对。这个起点决定了后来的取向——先保证核心正确，再谈界面、扩展和发布。</p>
+            <p>工具负责计算、整理和呈现；是否起卦、如何理解、下一步怎么做，始终交给使用者。</p>
+          </article>
+          <div class="timeline">
+            <div class="tl"><b>转折一 · 能算对</b><span>从“能运行”到“按规则计算”：接入历法库，补上八字、节气与道传排盘，把算法层和显示层分开，用测试核对计算与视图切换。</span></div>
+            <div class="tl"><b>转折二 · 一个发布源</b><span>曾并行维护多个版本并探索 Serverless 与 App 验证线，重复实现与文档漂移让维护成本上升；后来旧版与小红书版独立维护，本项目聚焦 V3，同一源码构建完整发布包。</span></div>
+            <div class="tl"><b>转折三 · 有边界的发布</b><span>从本地工具走向公开发布，先明确基础功能平等、AI 按需使用，最初由用户自备 Key，后来补充有限免费体验。服务可以扩展，数据去向与使用边界始终要说清楚。</span></div>
+          </div>
+          <article class="card mt">
+            <h3>核心理念</h3>
+            <p><strong>先把计算做对，再做好看：</strong>先验证历法、三数取余和排盘规则，再谈交互与视觉；计算结果可测试，不等于预测结论可信。</p>
+            <p><strong>基础功能平等：</strong>排盘、记录、主题、导入导出、提示词生成与复制都不设付费门槛，也不因是否填写 Key 而分层。</p>
+            <p><strong>删繁就简 · 同源优先：</strong>能删的入口就删；古法、江氏、道传共用同一组三数与同一条卦例，汇总与一键解卦共用同一份综合提示词构造器，避免规则漂移。</p>
+            <p><strong>模块化 · 重测试：</strong>主题、交互与视图、排盘核心、AI 分层；核心规则与关键操作有回归检查，功能现状以源码和验收结果为依据。</p>
+          </article>
+          <article class="card card--green mt">
+            <h3>一份心意，有限体验</h3>
+            <p>站点在服务开启且额度可用时提供有限免费解读，让未填写 Key 的人也能体验。这是“能帮一点是一点”的心意，不是永久服务或预测承诺，也不改变基础功能平等。</p>
+          </article>
+          <div class="grid grid--2 mt">
+            <article class="card">
+              <h3>我们坚持的初衷</h3>
+              <p>低门槛：不安装、不注册，打开网页即可开始。</p>
+              <p>可回看：保留问念、三数、盘面与复盘，而不是只给一句结论。</p>
+              <p>可验证：算法、提示词、测试和边界尽量写清楚。</p>
+              <p>有分寸：不把民俗体验包装成确定性承诺。</p>
+            </article>
+            <article class="card card--green">
+              <h3>利益与价值的取舍</h3>
+              <p>不把基础排盘、记录和提示词复制做成付费门槛。</p>
+              <p>不接广告 SDK，不靠行为追踪换取推荐或增长。</p>
+              <p>自备 Key 的费用由用户与服务商结算；站点在服务开启且额度可用时提供有限免费体验，该方式无需用户自己的 Key。</p>
+              <p>赞助与否不影响基础功能；自备 Key 与站点免费额度共用解读流程。</p>
+            </article>
+          </div>
+          <article class="card mt">
+            <h3>关键取舍与代价</h3>
+            <div class="table-wrap">
+              <table class="data">
+                <thead><tr><th>取舍</th><th>换来什么</th><th>代价</th></tr></thead>
+                <tbody>
+                  <tr><td>本地排盘 + 可选免费代理</td><td>基础功能本机运行；项目 Key 留在服务端，额度独立计数</td><td>免费服务需维护接口与额度；记录仍不跨设备同步</td></tr>
+                  <tr><td>单文件交付</td><td>双击即用、便于分发</td><td>受保护构建只提高阅读门槛，不等于加密</td></tr>
+                  <tr><td>用户自备 Key</td><td>基础功能不设门槛</td><td>浏览器不是密钥保险箱，共享设备 / 恶意扩展有风险</td></tr>
+                  <tr><td>主题数量较多</td><td>表达丰富</td><td>每个皮肤都要维护对比度与响应式</td></tr>
+                  <tr><td>本地记录</td><td>隐私好、离线可用</td><td>换设备 / 清数据会丢，需主动导出备份</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+          <article class="card mt">
+            <h3>AI 不是权限分层，而是两种使用方式</h3>
+            <p>同一卦例、同一语境规则和同一综合构造器，给不同使用习惯留出选择。</p>
+            <div class="grid grid--2 mt">
+              <div class="row" style="flex-direction:column;gap:3px;"><b>AI 提示词</b><span style="color:var(--gold)">半自动 · 不调用模型</span><span>本机生成、检查、编辑、复制提示词；不需要 Key，不产生模型 API 消耗。</span></div>
+              <div class="row" style="flex-direction:column;gap:3px;"><b>一键解卦</b><span style="color:var(--green)">可选 · 自备 Key 或可用的站点额度</span><span>调用外部模型并回写卦例；使用同源综合提示词，费用和留存由服务商决定。</span></div>
+            </div>
+          </article>
+          <aside class="callout callout--red">
+            <strong>最终想留下的体验</strong>
+            <p>无论是否填写 API Key，用户都能完整使用排盘、皮肤、记录和提示词；Key 只是把“复制去问 AI”变成“页面内直接请求并回写”的便利选项。</p>
+            <p>这份平等不是承诺预测结果，而是尽量不把基础信息、隐私和选择权变成收费门槛。</p>
+          </aside>
+        </section>
+
+        <div class="vol" id="v-tech">
+          <p class="vol__kicker">册五</p>
+          <h2>技术说明</h2>
+          <p class="vol__desc">数据流、隐私与工程边界——面向愿意深入了解的读者。</p>
+        </div>
+
+        <!-- 17 -->
+        <section class="chapter" id="design">
+          <div class="chapter__head">
+            <span class="chapter__no">17</span>
+            <div><h2>设计理念与多平台</h2><p>暖金视觉语言、渐进操作与响应式界面</p></div>
+          </div>
+          <article class="card">
+            <h3>设计不是装饰，而是让人更容易安静地使用</h3>
+            <p>暖金以温纸色做底，低饱和金色建立层次，朱砂只作少量提示；正文保持深色，避免长时间阅读刺眼。</p>
+            <p>起卦、排盘、记录按步骤展开：先聚焦当前任务，再逐步出现进阶操作，减少首次打开时的信息负担。</p>
+            <p>换主题不换规则；标题、按钮、反馈和信息层级保持一致，让美感服务于辨认与操作。</p>
+          </article>
+          <div class="grid grid--3 mt">
+            <article class="card card--plain"><h3 style="font-size:16px;">渐进呈现</h3><p>先输入，再看结果，排盘后才展开进阶操作。</p></article>
+            <article class="card card--plain"><h3 style="font-size:16px;">对齐与留白</h3><p>按钮与内容有主次，窄屏避免互相挤占。</p></article>
+            <article class="card card--plain"><h3 style="font-size:16px;">清晰可辨</h3><p>颜色辅助识别状态，不替代明确的文字标签。</p></article>
+          </div>
+          <article class="card mt">
+            <h3>一套网页，适配不同屏幕</h3>
+            <p>无需为手机、平板、电脑维护三套界面；页面按屏幕宽度调整卡片、列数与按钮排布。</p>
+            <div class="devices mt">
+              <div class="device device--desktop"><div class="device__frame"><i></i><i></i><i></i></div>桌面</div>
+              <div class="device device--tablet"><div class="device__frame"><i></i><i></i><i></i></div>平板</div>
+              <div class="device device--phone"><div class="device__frame"><i></i><i></i><i></i></div>手机</div>
+            </div>
+            <p class="mt">适配多屏不等于跨设备同步：历史数据留在当前浏览器身份中；字体、系统配色与本地存储权限可能因浏览器而异。</p>
+          </article>
+        </section>
+
+        <!-- 18 -->
+        <section class="chapter" id="ads">
+          <div class="chapter__head">
+            <span class="chapter__no">18</span>
+            <div><h2>无广告与数据流向</h2><p>以当前源码为范围说明，不作绝对隐私承诺</p></div>
+          </div>
+          <article class="card card--plain">
+            <h3>无广告代码 · 无浏览统计埋点</h3>
+            <p>页面、源码与样式检查范围内：未发现广告 SDK 或广告投放脚本，也未发现第三方浏览行为统计 / 追踪代码。</p>
+            <p>托管 / CDN、浏览器扩展与外部服务不由应用控制，具体以其自身规则为准。</p>
+          </article>
+          <h3 class="mt" style="font-size:16px;">普通排盘：留在当前浏览器</h3>
+          <div class="flow mt">
+            <div class="flow__node"><b>本机浏览器</b><span>排盘 · 记录 · 复盘 · 偏好</span></div>
+            <span class="flow__arrow" aria-hidden="true">→</span>
+            <div class="flow__node flow__node--green"><b>当前浏览器的本地存储</b><span>普通排盘不把卦例发送到应用后端</span></div>
+          </div>
+          <p style="margin-top:9px;color:var(--muted);font-size:13.5px;">打开网页本身仍会从托管站点 / CDN 获取页面文件；本地保存也不等同账号云同步。</p>
+
+          <h3 class="mt" style="font-size:16px;">仅当你主动使用 AI：请求发往模型服务</h3>
+          <div class="flow mt">
+            <div class="flow__node"><b>点击「一键解卦」</b><span>问念 + 排盘摘要</span></div>
+            <span class="flow__arrow" aria-hidden="true">→</span>
+            <div class="flow__node flow__node--green"><b>自备 Key：直连你的接口</b><span>服务开启且有额度时：本站代理转发</span></div>
+            <span class="flow__arrow" aria-hidden="true">→</span>
+            <div class="flow__node flow__node--red"><b>模型服务商</b><span>按其政策处理收到的请求</span></div>
+          </div>
+          <p style="margin-top:9px;color:var(--muted);font-size:13.5px;">“AI 解析”只在本机生成提示词；只有你复制并粘贴到外部 AI 后，外部服务才会收到内容。代理只计数，不记录问念与输出。</p>
+
+          <aside class="callout callout--red">
+            <strong>透明边界</strong>
+            <p>无广告不等于完全不联网：网页托管、外链和你主动发起的 AI 请求仍会产生相应网络访问。</p>
+            <p>不要输入与解读无关的敏感信息；公共设备避免持久保存 Key。AI 请求的具体留存与使用规则，以你选择的模型服务商隐私政策为准。</p>
+          </aside>
+        </section>
+
+        <!-- 19 -->
+        <section class="chapter" id="tech">
+          <div class="chapter__head">
+            <span class="chapter__no">19</span>
+            <div><h2>技术特点与边界</h2><p>轻量静态部署、浏览器本地计算、可选 AI 请求</p></div>
+          </div>
+          <article class="card">
+            <h3>浏览器优先：日常排盘不依赖 AI 服务</h3>
+            <p>手动、时间或随机填数后，核心排盘在浏览器本地计算；查看古法、江氏和道传结果，不需要把卦例发到作者的解卦服务器。</p>
+            <p>AI 是可选能力。只有主动发起模型解读时才会请求接口：自备 Key 优先直连；未配置时，仅在站点服务开启且额度可用时经本站代理转发。本机提示词不调用模型。</p>
+          </article>
+          <div class="grid grid--2 mt">
+            <article class="card"><h3 style="font-size:16px;">界面与交互 · src/ui</h3><p>输入、排盘呈现、记录与主题。</p></article>
+            <article class="card card--green"><h3 style="font-size:16px;">算法核心 · src/core</h3><p>三数计算、农历、江氏与道传。</p></article>
+            <article class="card card--red"><h3 style="font-size:16px;">状态与备份 · store + utils</h3><p>本地身份、记录、导入导出。</p></article>
+            <article class="card"><h3 style="font-size:16px;">可选 AI · src/ai</h3><p>提示词、请求状态、Key 保存策略。</p></article>
+          </div>
+          <article class="card mt card--plain">
+            <h3 style="color:var(--accent)">技术优势也有边界</h3>
+            <div class="rows">
+              <div class="row"><b>快与轻</b><span>普通排盘在本地完成；静态页面不需要为每次起卦运行后端计算。</span></div>
+              <div class="row"><b>可迁移</b><span>JSON 备份便于带走记录；Key 会从卦例备份中剔除，导出文件请妥善保管。</span></div>
+              <div class="row"><b>不等于云同步</b><span>数据和偏好依赖当前浏览器存储；清缓存、换浏览器或设备可能看不到原记录。</span></div>
+              <div class="row"><b>不等于绝对保密</b><span>设备使用者、浏览器扩展、托管日志与所选 AI 服务商仍需分别信任与管理。</span></div>
+            </div>
+          </article>
+        </section>
+
+        <!-- 20 -->
+        <section class="chapter" id="overview">
+          <div class="chapter__head">
+            <span class="chapter__no">20</span>
+            <div><h2>功能总览与验证</h2><p>把亮点、数量、隐私边界与测试证据放在同一页</p></div>
+          </div>
+          <article class="card card--plain">
+            <p>以下数字用于说明当前已实现的功能与验证范围，不代表预测能力或准确率。</p>
+          </article>
+          <div class="metrics mt">
+            <div class="metric"><b>31</b><strong>套主题皮肤</strong><span>22 通用 + 9 典藏</span></div>
+            <div class="metric metric--green"><b>14</b><strong>个复盘标签</strong><span>预设标签 + 自定义</span></div>
+            <div class="metric metric--red"><b>3</b><strong>种取数方式</strong><span>手动 / 时间 / 随机</span></div>
+            <div class="metric"><b>3</b><strong>种排盘方式</strong><span>古法 / 江氏 / 道传</span></div>
+            <div class="metric metric--green"><b>4</b><strong>个提示词入口</strong><span>古法 / 江氏 / 道传 / 汇总同源</span></div>
+            <div class="metric metric--red"><b>999</b><strong>条历史上限</strong><span>达到上限前先导出</span></div>
+          </div>
+          <aside class="callout callout--green mt">
+            <strong>站点免费额度</strong>
+            <p>未配置 Key 且站点服务开启、额度可用时，可经本站代理解读；次数受本机身份与网络 IP 限制，以页面显示为准，按 UTC+8 每天 00:00 重置。服务端额度计数不保存问念与输出。</p>
+          </aside>
+          <article class="card mt">
+            <h3>隐私与数据边界</h3>
+            <p>普通排盘、记录、主题与身份偏好留在当前浏览器；不要求登录，也不自动跨设备同步。</p>
+            <p>API Key 按当前浏览器身份保存；关闭标签页不会清除，也不会随卦例 JSON 备份导出。</p>
+            <p>主动发起一键解卦、重解、风格对比或差异研判时，问念与排盘摘要会发往模型接口；本机提示词预览与复制不发起模型请求。</p>
+          </article>
+          <article class="card mt card--plain">
+            <h3>测试与数据覆盖</h3>
+            <p>39 个自动化测试脚本 · 44 项结果操作回归 · 216 种三宫组合逐一覆盖。</p>
+            <p>AI 提示词评测集 42 条，覆盖 8 类问事语境；复盘预设标签 14 个。</p>
+            <p>测试通过代表实现符合案例与数据结构，不代表传统术数结论具有科学确定性。</p>
+          </article>
+        </section>
+
+        <!-- 21 -->
+        <section class="chapter" id="maintain">
+          <div class="chapter__head">
+            <span class="chapter__no">21</span>
+            <div><h2>模块化维护与扩展</h2><p>主题、交互、排盘与 AI 各归其位，后续增减更稳妥</p></div>
+          </div>
+          <article class="card card--plain">
+            <p>页面把“颜色”“交互与视图”“排盘核心”“提示词与模型”拆成相互协作的模块。新增一套皮肤不需要复制页面；调整交互与视图也不应改动排盘算法。</p>
+          </article>
+          <div class="grid grid--2 mt">
+            <article class="card"><h3 style="font-size:16px;">主题皮肤</h3><p style="color:var(--gold)">presentation.js + skins.css</p><p>登记名称、色板和分组；用变量适配正文、按钮、弹窗与结果卡。</p></article>
+            <article class="card card--green"><h3 style="font-size:16px;">交互与视图</h3><p style="color:var(--green)">renderer.js + jiang-view-mode.js</p><p>表格 / 六宫图等视图偏好只影响呈现，共用数据、身份和计算。</p></article>
+            <article class="card card--red"><h3 style="font-size:16px;">排盘核心</h3><p style="color:var(--accent)">src/core/ + test-*.mjs</p><p>古法、江氏、道传保持纯函数；改变显示时不能复制或改写核心。</p></article>
+            <article class="card"><h3 style="font-size:16px;">提示词与 AI</h3><p style="color:var(--gold)">src/ui/template.js + src/ai/</p><p>四个入口共用上下文；改动后同步评测、隐私与手册说明。</p></article>
+          </div>
+          <article class="card mt">
+            <h3>新增或调整时的最短流程</h3>
+            <div class="grid grid--4 mt">
+              <div><div class="step__no" style="margin-bottom:6px;">1</div><b style="font-size:14.5px;">先改模块源文件</b><p style="color:var(--muted);font-size:13.5px;">应用改 src；不手改构建首页，资料页单独维护。</p></div>
+              <div><div class="step__no" style="margin-bottom:6px;background:var(--green)">2</div><b style="font-size:14.5px;">补一条回归检查</b><p style="color:var(--muted);font-size:13.5px;">至少覆盖名称、状态和移动端尺寸。</p></div>
+              <div><div class="step__no" style="margin-bottom:6px;background:var(--accent)">3</div><b style="font-size:14.5px;">同步文字与说明</b><p style="color:var(--muted);font-size:13.5px;">用户手册、数量和边界保持一致。</p></div>
+              <div><div class="step__no" style="margin-bottom:6px;">4</div><b style="font-size:14.5px;">重新构建验收</b><p style="color:var(--muted);font-size:13.5px;">test:all → build:protected → test:protected。</p></div>
+            </div>
+          </article>
+          <aside class="callout callout--green">
+            <strong>给后续维护者的一句话</strong>
+            <p>皮肤是可替换的表达层，交互与视图是可组合的呈现层，排盘核心是稳定的计算层。沿着模块边界改动，才能让一次修复稳定地复用于所有主题和视图。</p>
+          </aside>
+        </section>
+
+        <!-- 22 -->
+        <section class="chapter" id="web">
+          <div class="chapter__head">
+            <span class="chapter__no">22</span>
+            <div><h2>Web 形态与隐私边界</h2><p>跨平台、低权限、可查看、可验证，同时把例外说清楚</p></div>
+          </div>
+          <article class="card card--plain">
+            <p>本工具是响应式静态网页：普通排盘在浏览器完成，不要求注册、安装或授予设备权限。iOS、安卓、鸿蒙等系统，只要使用支持现代网页标准的浏览器即可访问；平台差异主要来自浏览器本身。</p>
+          </article>
+          <div class="grid grid--2 mt">
+            <article class="card card--green">
+              <h3>Web 方式的轻量优势</h3>
+              <p><b>无需安装</b>　打开链接即可使用，不占用应用安装包入口。</p>
+              <p><b>无需权限</b>　不申请麦克风、通讯录、定位或后台运行权限。</p>
+              <p><b>跨平台</b>　同一套页面适配桌面、手机和平板浏览器。</p>
+              <p><b>易于查看</b>　源码、文档与测试脚本可供维护者检查。</p>
+            </article>
+            <article class="card">
+              <h3>与安装式 App 的取舍</h3>
+              <p>不需要应用商店审核、安装包更新和系统权限管理。</p>
+              <p>不依赖原生推送、后台任务或设备级能力；这些不是本工具的目标。</p>
+              <p>首次打开依赖网络获取页面；跨设备数据不会自动同步。</p>
+              <p>浏览器清理站点数据或更换站点地址后，本地记录可能不可见。</p>
+            </article>
+          </div>
+          <article class="card mt">
+            <h3>隐私边界：不监听，也不把普通卦例送到后台</h3>
+            <p>当前源码范围内未接入广告 SDK、广告投放脚本或第三方浏览行为统计；页面不申请设备权限，不包含麦克风、定位和后台监听逻辑。</p>
+            <p>普通排盘、记录、主题和身份偏好留在当前浏览器本地；本地身份是浏览器内的分区标识，不是账号。</p>
+            <p>例外只有用户主动使用 AI：问念与排盘摘要会发往所选模型接口——自备 Key 直连你填写的地址，未配置时，仅在服务开启且额度可用时经本站代理转发，具体留存规则以对应服务商政策为准。</p>
+          </article>
+          <article class="card mt card--plain">
+            <h3 style="color:var(--accent)">可验证的工程证据</h3>
+            <p>39 个自动化测试脚本 · 44 项结果操作回归 · 核心计算覆盖 216 种三宫组合。</p>
+            <p>AI 提示词评测集 42 条，覆盖 8 类问事语境；复盘预设标签 14 个。</p>
+            <p>普通构建为单 HTML 页面；体积随代码与依赖变化，以每次构建输出为准。</p>
+            <p>这些数字证明实现可重复检查，不代表预测结论或模型输出具有科学确定性。</p>
+          </article>
+        </section>
+
+        <section class="chapter" id="references">
+          <div class="chapter__head">
+            <span class="chapter__no">附</span>
+            <div><h2>参考资料与延伸阅读</h2><p>按可信度分级列出本册引用的主要来源，便于继续查证</p></div>
+          </div>
+          <aside class="callout">
+            <strong>怎么用这份参考</strong>
+            <p>来源等级说明“材料从哪里来”，不代表预测有效。文献与实物可用于核对名称、版本和文本；当代教程只说明该体系的规则。信仰效力宣称不作为使用指引，无法溯源或营销性内容不纳入手册。</p>
+          </aside>
+          <div class="table-wrap">
+            <table class="data">
+              <thead><tr><th>类别</th><th>主要来源</th><th>在册位置</th></tr></thead>
+              <tbody>
+                <tr><td>古籍与实物 <span class="level level--a">A 级</span></td><td>《玉匣记》、《协纪辨方书》、《居家必用事类全集》、《事林广记》、敦煌 P.3803《龙母决》、日本《头书长历》与六曜史料</td><td>第 13–15 章</td></tr>
+                <tr><td>辞书与机构 <span class="level level--a">A 级</span></td><td>中国台湾教育部《重编国语辞典修订本·小六壬》；中国台湾地区“国立中央图书馆”《六壬集应钤》馆藏书目</td><td>第 14 章</td></tr>
+                <tr><td>当代体系自述 <span class="level level--b">B 级</span></td><td>《江阳君带你轻松学小六壬》教程 1–120+；道传／道家（邵一尘系）公开资料与《卜法浅要通则》等</td><td>第 11、12、15 章</td></tr>
+                <tr><td>整理与研究</td><td>公开网络资料的多源交叉整理与来源清单（含 A／B／C／D 采信分级）</td><td>第 14、15 章</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <article class="card card--plain mt">
+            <h3>延伸阅读的建议顺序</h3>
+            <p>先从<a href="#study-guide">研习速览</a>选择阅读路径，再按需进入各章。核对古籍要看版本、原页与上下文；教程和案例要看作者、起课方法与反馈来源。不同网站转载同一篇文章，不等于多份独立证据。</p>
+            <p class="mt">按主题查阅<a href="#reading-library">研读索引</a>。下面的文献入口只用于进一步核对；无法访问时，不凭标题或目录补写缺失内容。</p>
+          </article>
+          <article class="card mt" id="reading-library">
+            <h3>研读索引</h3>
+            <p>把术语、方法、案例和文献分开读。以下是研究材料的必要摘要，不要求先找到原资料；进一步引用或复现时，仍须核对作者、版本和原页。</p>
+            <div class="reading-index">
+              <details>
+                <summary>基础术语 · 从六亲关系入手</summary>
+                <p>以“我”为参照：生我为父母，我生为子孙，同我为兄弟，我克为妻财，克我为官鬼；自身另标。这些是传统关系名称，不等于真实亲属、性别或身份。</p>
+                <p>身宫是分析自身的参照，用神是当前所问对象；两者不一定相同。转太极是换参照点，各系方法不同；先写明为何转换，不在看到反馈后任意换解释。</p>
+                <p>来源方向：研究整理中的术语表、三系对照卡。继续看<a href="#palaces">六宫与基础概念</a>、<a href="#method">五行与体用</a>。</p>
+              </details>
+              <details>
+                <summary>江氏读法 · 装卦与取用分开</summary>
+                <p>公开教程的学习顺序是：起课 → 地支 → 六亲 → 六神 → 五星 → 取用神与解释。地支决定关系参照；六亲描述关系，六神补充象意，五星是辅助信息层，不能只凭其中一项下结论。</p>
+                <p>材料中的“五星”通常另加空位，构成六个标签；本程序界面称“六星”，这是名称口径，不代表增加了一套天文计算。</p>
+                <p>来源方向：江氏公开教程及研究摘录；当前实现与教程的具体差别见<a href="#implementation-boundary">资料读法与当前实现</a>。按教程复现时须保留原取课法，不能把月份擅自补入日时法。</p>
+              </details>
+              <details>
+                <summary>道传读法 · 先定体用，再看趋势</summary>
+                <p>本册所引邵系资料以落宫为体、时辰为用，三宫用于讨论起因、过程与结果；这些是该体系的解释约定，不是事件已经发生的证据。</p>
+                <p>先确定体、用及各自五行，再比较生克。三宫具象、转太极和数应属于进一步读法；资料存在异文时保留版本，不拼成统一公式，也不据数应承诺日期或分数。</p>
+                <p>来源方向：道传公开资料的研究摘录。继续看<a href="#method">体用读法</a>与<a href="#compare">三系对照</a>；本册不提供修持或化解操作。</p>
+              </details>
+              <details>
+                <summary>案例复盘 · 先核输入，再读反馈</summary>
+                <ul>
+                  <li>记录问题与时限，以及三数、取课法、日历口径和时辰；缺一项就明确写“未提供”。</li>
+                  <li>区分原盘、作者当时解释、后来反馈与自己的复盘，不把反馈反写成起卦前已知信息。</li>
+                  <li>若要用程序核对，先确认取数和装卦规则相容；不相容时仅作文本研习，不声称复现。</li>
+                  <li>成功、未应验、部分相符和待反馈都保留；精选案例与作者自述不能直接算成准确率。</li>
+                </ul>
+                <p>研究材料中江氏有教程索引与逐案摘录，道传有公开分类案例；索引不等于完整案例，摘要也不能代替原图。可从<a href="#cases">本册示例</a>开始，使用<a href="#records">本地反馈</a>记录自己的观察。</p>
+              </details>
+              <details>
+                <summary>文献线索 · 版本、用途与原页</summary>
+                <p>《玉匣记》中的时课、择日资料中的轮布与日本六曜，应按不同用途阅读。名称、排列相近只是比较线索，不能直接推成同一算法或已确定的传承链。</p>
+                <p><a href="https://www.wul.waseda.ac.jp/kotenseki/html/bunko31/bunko31_e1341/index.html" target="_blank" rel="noopener noreferrer">早稻田大学《头书长历》馆藏</a>可查 1688 年刊本的目录信息与缺损说明；目录并不证明它是最早完整文本。<a href="https://www.ndl.go.jp/koyomi/chapter3/s3.html" target="_blank" rel="noopener noreferrer">日本国立国会图书馆六曜说明</a>介绍名称变迁和现行历注配当，不是本程序的算法依据。</p>
+                <p>教程案例入口：<a href="https://www.jiangyangjun.com/post/120.html" target="_blank" rel="noopener noreferrer">江氏教程 40</a>、<a href="https://www.jiangyangjun.com/post/122.html" target="_blank" rel="noopener noreferrer">教程 42</a>、<a href="https://www.jiangyangjun.com/post/124.html" target="_blank" rel="noopener noreferrer">教程 44</a>。作者站点可能暂不可访问，本文案例仅据研究摘录整理，未逐页完成原文复核。</p>
+              </details>
+              <details>
+                <summary>材料边界 · 四个问题判断怎样采用</summary>
+                <p>读一条资料，先问：谁说的？哪一版？适用哪套规则？缺少什么证据？馆藏目录只证明目录信息，原文只证明该文如此记载，教程只说明作者的规则，案例反馈也不是效果保证。</p>
+                <p>同一文章被多站转载仍是一条来源链。“十二卷”、课程书单或案例集的目录，不等于已经获得并核过全本；未见材料也不等于证明从未存在。</p>
+                <p>本文不发布整包研究原稿、市场资源清单或缺出处的口诀；命法、健康干预、恐吓断辞和效力宣传不转成操作建议。材料补充时优先替换同一知识点的说明与出处，不反复新增重复章节。</p>
+              </details>
+            </div>
+          </article>
+        </section>
+      </div>
+    </div>
   </main>
 
   <footer>
-    <div class="shell">民俗文化体验，理性参考。普通排盘与记录以浏览器本地保存为主；主动使用 AI 时，必要数据会发送至所选模型接口（自备 Key 直连用户配置的接口；未配置 Key 而使用项目额度时经本站代理转发）。返回 <a href="../index.html">排盘应用</a>、<a href="../project/index.html">项目说明</a> 或 <a href="../privacy/index.html">隐私边界</a>。</div>
+    <div class="shell">
+      民俗文化体验，理性参考。普通排盘与记录以浏览器本地保存为主；主动使用 AI 时，问念、排盘摘要和认证信息会发送至所选模型接口（自备 Key 直连；未配置时，仅在服务开启且额度可用时经本站代理转发）。本册以网页样式呈现，不替代运行页面验收。
+      <div class="footer-links">
+        <a href="../index.html">排盘应用</a>
+        <a href="../project/index.html">项目说明</a>
+        <a href="#privacy">隐私与数据</a>
+        <a href="#top">回到顶部</a>
+      </div>
+    </div>
   </footer>
 </body>
 </html>
