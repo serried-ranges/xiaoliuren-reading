@@ -108,6 +108,22 @@ await ok('首次查询剩余 10', async () => {
   assert.equal(data.available, true);
   assert.equal(data.limit, 10);
   assert.equal(data.remaining, 10);
+  assert.equal(data.userUsed, 0);
+  assert.equal(data.userLimit, 10);
+  assert.equal(data.userRemaining, 10);
+});
+
+await ok('个人已用与有效可用额度分开返回', async () => {
+  const env = makeEnv(makeKV(), { FREE_USER_LIMIT: 10, FREE_IP_LIMIT: 2, FREE_GLOBAL_LIMIT: 100 });
+  const clientId = 'u_test_counterview1';
+  const ip = '198.51.100.19';
+  assert.equal((await post(env, clientId, ip)).status, 200);
+  assert.equal((await post(env, clientId, ip)).status, 200);
+  const data = await (await get(env, clientId, ip)).json();
+  assert.equal(data.userUsed, 2, '应返回该 clientId 的真实已用次数');
+  assert.equal(data.userLimit, 10, '个人上限与 IP 限制分开');
+  assert.equal(data.userRemaining, 8, '个人剩余不能被 IP 上限污染');
+  assert.equal(data.remaining, 0, '旧字段仍代表个人/IP/全局合并后的实际可用数');
 });
 
 // 3) 用户上限 10

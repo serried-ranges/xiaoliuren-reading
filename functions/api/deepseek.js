@@ -130,13 +130,17 @@ function quotaStateFromRows(env, clientId, ipHash, rows) {
   const user = counters.get(`user:${clientId}`);
   const ip = counters.get(`ip:${ipHash}`);
   const global = counters.get('global:all');
-  const userLimit = base.user + (Number(user?.bonus) || 0);
-  const ipLimit = base.ip + (Number(ip?.bonus) || 0);
-  return {
-    userLimit,
-    ipLimit,
-    remaining: Math.max(0, Math.min(
-      userLimit - (Number(user?.used) || 0),
+    const userLimit = base.user + (Number(user?.bonus) || 0);
+    const ipLimit = base.ip + (Number(ip?.bonus) || 0);
+    const userUsed = Math.max(0, Number(user?.used) || 0);
+    const userRemaining = Math.max(0, userLimit - userUsed);
+    return {
+      userUsed,
+      userLimit,
+      userRemaining,
+      ipLimit,
+      remaining: Math.max(0, Math.min(
+      userRemaining,
       ipLimit - (Number(ip?.used) || 0),
       base.global - (Number(global?.used) || 0),
     )),
@@ -563,9 +567,12 @@ export async function onRequestGet({ request, env }) {
   return json({
     available: true,
     day,
-    timezone: 'UTC+8',
-    limit: quota.userLimit,
-    remaining: quota.remaining,
+      timezone: 'UTC+8',
+      limit: quota.userLimit,
+      remaining: quota.remaining,
+      userUsed: quota.userUsed,
+      userLimit: quota.userLimit,
+      userRemaining: quota.userRemaining,
     jihengTianchouEnabled: Boolean(String(env.TIAN_CHOU_CODE || env.TEST_QUOTA_CODE || '').trim()),
     // Older published frontends still read this field.
     testQuotaEnabled: Boolean(String(env.TIAN_CHOU_CODE || env.TEST_QUOTA_CODE || '').trim()),
