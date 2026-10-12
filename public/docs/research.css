@@ -1,19 +1,54 @@
 /* 仅作用于研习页与项目说明；PDF/书稿只链接，不加载外站资源。 */
-.research-entry { margin-top: 16px; border-color: var(--gold); }
-.research-entry h2 { color: var(--gold); }
-.research-entry .research-entry__action { margin-top: 8px; color: var(--gold); font-weight: 700; }
-.project-page .resource-entries {
-  display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin-top: 16px;
+.project-page .research-entry { border-color: var(--gold); }
+.project-page .research-entry h2 { color: var(--gold); }
+.project-page .research-entry .research-entry__action { margin-top: 8px; color: var(--gold); font-weight: 700; }
+.project-page { font-size: 1rem; line-height: 1.75; }
+.project-page h1 { font-size: clamp(2rem, 5vw, 3rem); }
+.project-page .lead { max-width: 40em; font-size: 1.0625rem; }
+.project-page .project-start-steps {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px;
+  margin: 20px 0; padding: 0; list-style: none;
 }
-.project-page .resource-entries .link-card { margin-top: 0; }
+.project-page .project-start-steps li {
+  min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 12px;
+  background: var(--card); overflow-wrap: anywhere;
+}
+.project-page .step-number { color: var(--accent); font-size: .8125rem; font-weight: 700; letter-spacing: .08em; }
+.project-page .project-start-steps h3 { margin: 8px 0; font-size: 1.125rem; }
+.project-page .project-start-steps p { margin: 0; font-size: .9375rem; }
+.project-page .resource-entries {
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-top: 16px;
+}
+.project-page .resource-entries .link-card { min-width: 0; margin-top: 0; overflow-wrap: anywhere; }
+.project-page .resource-entries h2 { font-size: 1.125rem; }
+.project-page .resource-entry__label { font-size: .8125rem; color: var(--muted); }
 .project-page .book-entry { border-color: var(--accent); }
-.project-page .resource-entry__action { margin-top: 8px; color: var(--accent); font-weight: 700; }
+.project-page .resource-entry__action { margin-top: auto; padding-top: 8px; color: var(--accent); font-weight: 700; }
+.project-page .source-entry .resource-entry__action { color: var(--ink); }
 .project-page .book-entry:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 .research-page .page-wrap { width: min(calc(100% - 32px), 960px); }
 .research-page { font-size: 1rem; line-height: 1.75; }
 .research-page .site-nav a { font-size: .875rem; }
 .research-page h1 { font-size: clamp(2rem, 5vw, 3rem); }
 .research-page .lead { max-width: 38em; font-size: 1.0625rem; }
+.research-page .reading-route-nav { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 20px; }
+.research-page .reading-route-nav a {
+  flex: 1 1 7rem; display: flex; align-items: center; justify-content: center;
+  min-width: 0; min-height: 44px; padding: 10px 16px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--card); color: var(--ink); font-size: .9375rem; text-align: center;
+  text-decoration: none; overflow-wrap: anywhere;
+}
+.research-page .reading-route-nav a:hover { background: var(--accent-soft); }
+.research-page .reading-route-nav a:focus-visible,
+.research-page .catalog-action:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.research-page .reading-sources { padding-bottom: 4px; }
+.research-page .catalog-action {
+  display: inline-flex; position: relative; align-items: center; justify-content: center;
+  min-width: 0; min-height: 44px; max-width: 100%; padding: 10px 16px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--ink);
+  font-size: .9375rem; font-weight: 700; text-align: center; text-decoration: none; overflow-wrap: anywhere;
+}
+.research-page .catalog-action:hover { border-color: var(--accent); }
 .research-page .note { border-left-color: var(--gold); font-size: .9375rem; }
 .research-page .reading-topics {
   align-items: stretch; gap: clamp(16px, 2.5vw, 24px);
@@ -78,6 +113,8 @@
   margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
 }
 @media (max-width: 699px) {
+  .project-page .project-start-steps, .project-page .resource-entries { grid-template-columns: minmax(0, 1fr); }
+  .project-page .page-card { padding: clamp(18px, 4vw, 26px); }
   .research-page .reading-topics { grid-template-columns: minmax(0, 1fr); }
   .research-page .page-card { padding: clamp(18px, 4vw, 26px); }
   .research-page .section { margin-top: 24px; padding-top: 20px; }
@@ -88,7 +125,6 @@
   .research-page .book-actions { margin-top: 16px; }
 }
 @media (max-width: 520px) {
-  .project-page .resource-entries { grid-template-columns: minmax(0, 1fr); }
   .research-page .book-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .research-page .book-action--primary { grid-column: 1 / -1; }
 }

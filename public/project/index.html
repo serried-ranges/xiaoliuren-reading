@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="了解玑衡小六壬排盘的使用入口、通识书籍PDF、专题研习资料，以及AI解读与数据边界。">
+<meta name="description" content="了解玑衡小六壬排盘的使用入口、通识书籍、专题研习与资料出处，以及AI解读与数据边界。">
 <title>项目说明 · 玑衡小六壬排盘</title>
   <link rel="stylesheet" href="../docs/site.css?v=20260921">
-  <link rel="stylesheet" href="../docs/research.css?v=20261008a">
+  <link rel="stylesheet" href="../docs/research.css?v=reading-structure-2">
 </head>
 <body class="project-page">
   <main class="page-wrap">
@@ -22,11 +22,23 @@
 
       <section class="section">
         <h2>第一次来，从这里开始</h2>
-        <ul class="list">
-          <li><strong>① 开始排盘：</strong>点上方「排盘应用」，按三数或江氏起课方式填写，确认输入后点击“开始推算”。</li>
-          <li><strong>② 了解操作：</strong>从<a href="../manual/index.html#start">阅读手册的上手部分</a>开始；想学习术语与体系，可看<a href="../manual/index.html#study-guide">研习速览</a>。</li>
-          <li><strong>③ 按需解读：</strong>了解<a href="../manual/index.html#ai">AI 提示词与一键解卦</a>的区别，再选择是否调用模型。</li>
-        </ul>
+        <ol class="project-start-steps">
+          <li>
+            <span class="step-number" aria-hidden="true">01</span>
+            <h3>开始排盘</h3>
+            <p>点上方「排盘应用」，按三数或江氏起课方式填写，确认输入后点击“开始推算”。</p>
+          </li>
+          <li>
+            <span class="step-number" aria-hidden="true">02</span>
+            <h3>了解操作</h3>
+            <p>从<a href="../manual/index.html#start">阅读手册的上手部分</a>开始；想学习术语与体系，可看<a href="../manual/index.html#study-guide">研习速览</a>。</p>
+          </li>
+          <li>
+            <span class="step-number" aria-hidden="true">03</span>
+            <h3>按需解读</h3>
+            <p>了解<a href="../manual/index.html#ai">AI 提示词与一键解卦</a>的区别，再选择是否调用模型。</p>
+          </li>
+        </ol>
         <p class="meta">记录保存在当前浏览器，不自动跨设备同步；重要内容请定期导出备份。</p>
       </section>
 
@@ -47,17 +59,25 @@
 
       <section class="section" aria-labelledby="study-resources">
         <h2 id="study-resources">研习与书籍</h2>
-        <p>想系统了解，先读通识书籍；已有问题，再按主题查阅。</p>
+        <p>先选阅读目的：系统入门、专题查阅，或核对资料出处。</p>
         <div class="resource-entries">
           <a class="link-card book-entry" href="../research/index.html#reading-book">
-            <h2>通识书籍 · PDF</h2>
+            <span class="resource-entry__label">系统入门</span>
+            <h2>通识书籍</h2>
             <span>《小六壬通识：源流·体系·诸派》，提供PDF与分章阅读入口。</span>
             <span class="resource-entry__action">查看书籍 →</span>
           </a>
-          <a class="link-card research-entry" href="../research/index.html">
+          <a class="link-card research-entry" href="../research/index.html#reading-start">
+            <span class="resource-entry__label">带着问题</span>
             <h2>研习资料</h2>
             <span>按术语、体系、源流与案例查阅研究文章。</span>
             <span class="research-entry__action">按主题阅读 →</span>
+          </a>
+          <a class="link-card source-entry" href="../research/index.html#reading-sources">
+            <span class="resource-entry__label">回到出处</span>
+            <h2>文献与书籍整理</h2>
+            <span>查阅资料汇编的来源索引，区分原始材料与研究整理。</span>
+            <span class="resource-entry__action">查看资料出处 →</span>
           </a>
         </div>
         <div class="secondary-grid grid--two">
@@ -76,7 +96,7 @@
         <h2>设计取向</h2>
         <ul class="list">
           <li><strong>本地优先：</strong>普通排盘、主题偏好和历史记录先在当前浏览器完成，不要求登录，也不自动跨设备同步。</li>
-          <li><strong>主动选择：</strong>AI 提示词在本机生成、检查与复制，不调用模型。一键解卦、重解、追问和风格对比等主动操作，会向模型接口发送问念与必要的排盘信息。</li>
+          <li><strong>主动选择：</strong>AI 提示词与追问提示词在本机生成、检查与复制，不调用模型。一键解卦、重解和风格对比等主动操作，才会向模型接口发送问念与必要的排盘信息。</li>
           <li><strong>两种调用：</strong>自备 API Key 时直连你填写的接口；未填写时，站点开启免费服务且额度可用，才能使用项目额度。可用次数以解卦页面显示为准，自备 Key 的费用与限额由服务商决定。</li>
           <li><strong>数据说明：</strong>数据去向、Key 保存与免费额度规则见<a href="../manual/index.html#privacy">阅读手册 · 隐私与数据</a>。</li>
         </ul>
